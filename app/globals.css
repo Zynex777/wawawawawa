@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-color: #F6F5F1;
+  color: #1B1D2A;
+}
+
+::selection {
+  background-color: #2C4FE6;
+  color: #F6F5F1;
+}
+
+* {
+  scrollbar-width: thin;
+}
+
+:focus-visible {
+  outline: 2px solid #2C4FE6;
+  outline-offset: 2px;
+}

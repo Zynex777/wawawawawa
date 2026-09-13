@@ -1,0 +1,71 @@
+// Schema de referência para quando o app sair do modo demonstração
+// (hoje os dados ficam salvos no navegador) e passar a usar o Supabase.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  criadoEm  DateTime @default(now())
+  canais    Canal[]
+  lojas     Loja[]
+  videos    Video[]
+}
+
+model Canal {
+  id               String   @id @default(uuid())
+  usuario          Usuario  @relation(fields: [usuarioId], references: [id])
+  usuarioId        String
+  rede             String   // tiktok, kwai, facebook, instagram, x, youtube, whatsapp, mercadolivre
+  suporte          String   // "automatico" | "manual"
+  accessToken      String?
+  refreshToken     String?
+  expiraEm         DateTime?
+  contaConectada   String?
+  conectado        Boolean  @default(false)
+  postagens        Postagem[]
+}
+
+model Loja {
+  id            String   @id @default(uuid())
+  usuario       Usuario  @relation(fields: [usuarioId], references: [id])
+  usuarioId     String
+  nome          String
+  padrao        Boolean  @default(false)
+  templateLink  String?
+  videos        Video[]
+}
+
+model Video {
+  id            String   @id @default(uuid())
+  usuario       Usuario  @relation(fields: [usuarioId], references: [id])
+  usuarioId     String
+  loja          Loja     @relation(fields: [lojaId], references: [id])
+  lojaId        String
+  produtoNome   String
+  linkAfiliado  String
+  legenda       String?
+  urlArquivo    String?
+  origem        String   // "automatico" | "galeria"
+  status        String   @default("rascunho")
+  criadoEm      DateTime @default(now())
+  postagens     Postagem[]
+}
+
+model Postagem {
+  id            String    @id @default(uuid())
+  video         Video     @relation(fields: [videoId], references: [id])
+  videoId       String
+  canal         Canal     @relation(fields: [canalId], references: [id])
+  canalId       String
+  status        String    // publicado | pendente | falhou | manual
+  dataAgendada  DateTime  @default(now())
+  dataPostada   DateTime?
+  erro          String?
+}
