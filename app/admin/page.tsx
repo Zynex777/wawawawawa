@@ -28,16 +28,22 @@ export default function AdminPainel() {
   const router = useRouter();
   const [canais, setCanais] = useState<Canal[]>([]);
   const [carregando, setCarregando] = useState(true);
+  const [erroCarregar, setErroCarregar] = useState("");
   const [salvandoId, setSalvandoId] = useState<string | null>(null);
   const [mensagem, setMensagem] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetch("/api/canais")
-      .then((r) => r.json())
-      .then((data) => {
-        setCanais(data);
-        setCarregando(false);
-      });
+      .then(async (r) => {
+        if (!r.ok) {
+          const corpo = await r.json().catch(() => ({}));
+          throw new Error(corpo.erro ?? `Erro ${r.status} ao buscar os canais`);
+        }
+        return r.json();
+      })
+      .then((data) => setCanais(data))
+      .catch((e) => setErroCarregar(e.message ?? "Falha ao carregar os canais"))
+      .finally(() => setCarregando(false));
   }, []);
 
   async function salvar(canal: Canal, campos: Partial<Canal>) {
@@ -64,6 +70,21 @@ export default function AdminPainel() {
   }
 
   if (carregando) return <p className="text-sm text-muted">Carregando…</p>;
+
+  if (erroCarregar) {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold">Admin · Teste de APIs</h1>
+        <div className="mt-6 rounded-md bg-coral/10 px-3 py-2 text-sm text-coral">
+          Não deu pra carregar os canais: {erroCarregar}
+        </div>
+        <p className="mt-3 text-xs text-muted">
+          Confira se a variável DATABASE_URL está certa nas configurações do Vercel e se o redeploy já foi
+          feito depois de adicioná-la.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div>
