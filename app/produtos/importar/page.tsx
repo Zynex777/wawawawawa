@@ -7,10 +7,11 @@ import { Upload, Link as LinkIcon } from "lucide-react";
 
 function detectarLoja(link: string, lojas: { id: string; nome: string }[]) {
   const l = link.toLowerCase();
-  if (l.includes("mercadolivre") || l.includes("mercadolibre")) return lojas.find((x) => x.id === "ml");
-  if (l.includes("shopee")) return lojas.find((x) => x.id === "shopee");
-  if (l.includes("amazon")) return lojas.find((x) => x.id === "amazon");
-  if (l.includes("shein")) return lojas.find((x) => x.id === "shein");
+  const porNome = (trecho: string) => lojas.find((x) => x.nome.toLowerCase().includes(trecho));
+  if (l.includes("mercadolivre") || l.includes("mercadolibre")) return porNome("mercado livre");
+  if (l.includes("shopee")) return porNome("shopee");
+  if (l.includes("amazon")) return porNome("amazon");
+  if (l.includes("shein")) return porNome("shein");
   return undefined;
 }
 
@@ -30,7 +31,7 @@ export default function ImportarProduto() {
     // Em produção: chamada à API oficial de cada marketplace para nome/preço/imagem/vídeo.
     setTimeout(() => {
       const loja = detectarLoja(link, lojas);
-      const temVideoAutomatico = loja?.id === "ml"; // só ML traz vídeo automático via API pública
+      const temVideoAutomatico = loja?.nome.toLowerCase().includes("mercado livre") ?? false; // só ML traz vídeo automático via API pública
       setEncontrado({
         nome: "Produto importado do link colado",
         lojaNome: loja?.nome ?? "Loja não reconhecida (cadastre em Lojas)",
@@ -41,18 +42,25 @@ export default function ImportarProduto() {
     }, 900);
   }
 
-  function finalizar() {
+  const [salvando, setSalvando] = useState(false);
+
+  async function finalizar() {
     if (!encontrado) return;
     const loja = detectarLoja(link, lojas);
-    adicionarVideo({
+    if (!loja) {
+      alert("Não reconheci a loja desse link. Cadastre essa loja em Lojas antes de importar.");
+      return;
+    }
+    setSalvando(true);
+    const novo = await adicionarVideo({
       produtoNome: encontrado.nome,
-      lojaId: loja?.id ?? "outra",
+      lojaId: loja.id,
       origem: encontrado.temVideo ? "automatico" : arquivoGaleria ? "galeria" : "automatico",
-      urlThumb: "",
       legenda,
       linkAfiliado: link,
     });
-    router.push("/videos");
+    setSalvando(false);
+    if (novo) router.push("/videos");
   }
 
   return (
@@ -118,8 +126,12 @@ export default function ImportarProduto() {
             </div>
           )}
 
-          <button onClick={finalizar} className="rounded-md bg-cobalt px-4 py-2 text-sm font-semibold text-paper">
-            Salvar no banco de vídeos
+          <button
+            onClick={finalizar}
+            disabled={salvando}
+            className="rounded-md bg-cobalt px-4 py-2 text-sm font-semibold text-paper disabled:opacity-50"
+          >
+            {salvando ? "Salvando…" : "Salvar no banco de vídeos"}
           </button>
         </div>
       )}

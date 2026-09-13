@@ -3,11 +3,12 @@
 import { useState, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useApp } from "@/components/store";
+import { nomeCanal, iconeCanal } from "@/lib/canais-meta";
 import * as Icons from "lucide-react";
 import { Check } from "lucide-react";
 
 function PostarConteudo() {
-  const { videos, canais, postarEm } = useApp();
+  const { videos, canais, postarEm, carregando } = useApp();
   const params = useSearchParams();
   const router = useRouter();
   const videoIdParam = params.get("video");
@@ -32,6 +33,8 @@ function PostarConteudo() {
     postarEm(video.id, selecionados);
     router.push("/historico");
   }
+
+  if (carregando) return <p className="text-sm text-muted">Carregando…</p>;
 
   if (videos.length === 0) {
     return <p className="text-sm text-muted">Nenhum vídeo pronto ainda. Importe um produto primeiro.</p>;
@@ -70,7 +73,7 @@ function PostarConteudo() {
 
       <div className="mt-2 divide-y divide-line border-y border-line">
         {conectados.map((canal) => {
-          const Icone = (Icons as any)[canal.icone] ?? Icons.Radio;
+          const Icone = (Icons as any)[iconeCanal(canal.rede)] ?? Icons.Radio;
           const marcado = selecionados.includes(canal.id);
           return (
             <button
@@ -80,7 +83,7 @@ function PostarConteudo() {
             >
               <span className="flex items-center gap-3">
                 <Icone size={18} />
-                <span className="text-sm">{canal.nome}</span>
+                <span className="text-sm">{nomeCanal(canal.rede)}</span>
                 <span className="text-xs text-muted">
                   {canal.suporte === "automatico" ? "automático" : "manual"}
                 </span>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useApp } from "@/components/store";
+import { nomeCanal } from "@/lib/canais-meta";
 
 const rotulos: Record<string, string> = {
   publicado: "Publicado",
@@ -39,7 +40,7 @@ export default function Historico() {
             <div key={p.id} className="flex items-center justify-between py-3">
               <div>
                 <p className="text-sm font-semibold">{video?.produtoNome ?? "Vídeo removido"}</p>
-                <p className="text-xs text-muted">{canal?.nome}</p>
+                <p className="text-xs text-muted">{canal ? nomeCanal(canal.rede) : ""}</p>
               </div>
               <span className={`rounded-md px-2 py-1 text-xs font-semibold ${cores[p.status]}`}>
                 {rotulos[p.status]}

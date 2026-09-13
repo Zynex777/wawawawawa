@@ -2,18 +2,19 @@ export type SuporteAPI = "automatico" | "manual";
 
 export type Canal = {
   id: string;
-  nome: string;
-  icone: string; // lucide icon name
-  conectado: boolean;
+  rede: string;
   suporte: SuporteAPI;
-  contaConectada?: string;
+  conectado: boolean;
+  contaConectada?: string | null;
+  accessToken?: string | null;
+  refreshToken?: string | null;
 };
 
 export type Loja = {
   id: string;
   nome: string;
   padrao: boolean;
-  templateLink: string;
+  templateLink?: string | null;
 };
 
 export type Video = {
@@ -21,9 +22,10 @@ export type Video = {
   produtoNome: string;
   lojaId: string;
   origem: "automatico" | "galeria";
-  urlThumb: string;
-  legenda: string;
+  urlArquivo?: string | null;
+  legenda?: string | null;
   linkAfiliado: string;
+  status: string;
   criadoEm: string;
 };
 
@@ -35,6 +37,6 @@ export type Postagem = {
   canalId: string;
   status: StatusPostagem;
   dataAgendada: string;
-  dataPostada?: string;
-  erro?: string;
+  dataPostada?: string | null;
+  erro?: string | null;
 };

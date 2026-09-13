@@ -1,5 +1,3 @@
-// Schema de referência para quando o app sair do modo demonstração
-// (hoje os dados ficam salvos no navegador) e passar a usar o Supabase.
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,62 +8,72 @@ datasource db {
 }
 
 model Usuario {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  criadoEm  DateTime @default(now())
-  canais    Canal[]
-  lojas     Loja[]
-  videos    Video[]
+  id       String   @id @default(uuid()) @db.Uuid
+  email    String   @unique
+  criadoEm DateTime @default(now()) @map("criado_em")
+  canais   Canal[]
+  lojas    Loja[]
+  videos   Video[]
+
+  @@map("usuario")
 }
 
 model Canal {
-  id               String   @id @default(uuid())
-  usuario          Usuario  @relation(fields: [usuarioId], references: [id])
-  usuarioId        String
-  rede             String   // tiktok, kwai, facebook, instagram, x, youtube, whatsapp, mercadolivre
-  suporte          String   // "automatico" | "manual"
-  accessToken      String?
-  refreshToken     String?
-  expiraEm         DateTime?
-  contaConectada   String?
-  conectado        Boolean  @default(false)
-  postagens        Postagem[]
+  id             String     @id @default(uuid()) @db.Uuid
+  usuario        Usuario    @relation(fields: [usuarioId], references: [id])
+  usuarioId      String     @map("usuario_id") @db.Uuid
+  rede           String
+  suporte        String
+  accessToken    String?    @map("access_token")
+  refreshToken   String?    @map("refresh_token")
+  expiraEm       DateTime?  @map("expira_em")
+  contaConectada String?    @map("conta_conectada")
+  conectado      Boolean    @default(false)
+  postagens      Postagem[]
+
+  @@map("canal")
 }
 
 model Loja {
-  id            String   @id @default(uuid())
-  usuario       Usuario  @relation(fields: [usuarioId], references: [id])
-  usuarioId     String
-  nome          String
-  padrao        Boolean  @default(false)
-  templateLink  String?
-  videos        Video[]
+  id           String  @id @default(uuid()) @db.Uuid
+  usuario      Usuario @relation(fields: [usuarioId], references: [id])
+  usuarioId    String  @map("usuario_id") @db.Uuid
+  nome         String
+  padrao       Boolean @default(false)
+  templateLink String? @map("template_link")
+  videos       Video[]
+
+  @@map("loja")
 }
 
 model Video {
-  id            String   @id @default(uuid())
-  usuario       Usuario  @relation(fields: [usuarioId], references: [id])
-  usuarioId     String
-  loja          Loja     @relation(fields: [lojaId], references: [id])
-  lojaId        String
-  produtoNome   String
-  linkAfiliado  String
-  legenda       String?
-  urlArquivo    String?
-  origem        String   // "automatico" | "galeria"
-  status        String   @default("rascunho")
-  criadoEm      DateTime @default(now())
-  postagens     Postagem[]
+  id           String     @id @default(uuid()) @db.Uuid
+  usuario      Usuario    @relation(fields: [usuarioId], references: [id])
+  usuarioId    String     @map("usuario_id") @db.Uuid
+  loja         Loja       @relation(fields: [lojaId], references: [id])
+  lojaId       String     @map("loja_id") @db.Uuid
+  produtoNome  String     @map("produto_nome")
+  linkAfiliado String     @map("link_afiliado")
+  legenda      String?
+  urlArquivo   String?    @map("url_arquivo")
+  origem       String
+  status       String     @default("rascunho")
+  criadoEm     DateTime   @default(now()) @map("criado_em")
+  postagens    Postagem[]
+
+  @@map("video")
 }
 
 model Postagem {
-  id            String    @id @default(uuid())
-  video         Video     @relation(fields: [videoId], references: [id])
-  videoId       String
-  canal         Canal     @relation(fields: [canalId], references: [id])
-  canalId       String
-  status        String    // publicado | pendente | falhou | manual
-  dataAgendada  DateTime  @default(now())
-  dataPostada   DateTime?
-  erro          String?
+  id           String    @id @default(uuid()) @db.Uuid
+  video        Video     @relation(fields: [videoId], references: [id])
+  videoId      String    @map("video_id") @db.Uuid
+  canal        Canal     @relation(fields: [canalId], references: [id])
+  canalId      String    @map("canal_id") @db.Uuid
+  status       String
+  dataAgendada DateTime  @default(now()) @map("data_agendada")
+  dataPostada  DateTime? @map("data_postada")
+  erro         String?
+
+  @@map("postagem")
 }

@@ -3,58 +3,52 @@
 App para cadastrar suas lojas de afiliado, conectar seus canais e postar o vídeo de um produto em todos os
 canais de uma vez.
 
-## O que já está pronto (funciona agora, sem configurar nada)
+No ar em: https://multipost-afiliado.vercel.app
 
-Um protótipo funcional completo, com todos os fluxos que você pediu, guardando os dados no próprio
-navegador (por enquanto sem banco de dados real):
+## O que mudou nesta versão: banco de dados real
 
-- **Canais**: tela para "conectar" TikTok, Kwai, Facebook, Instagram, X, YouTube, WhatsApp e Mercado Livre
-- **Lojas**: Mercado Livre, Shopee, Amazon e Shein já cadastradas, com botão para adicionar novas lojas
-- **Importar produto**: cola o link, o app simula a busca automática de nome/loja e pede vídeo da galeria
-  quando a loja não tem vídeo automático
-- **Vídeos**: banco de vídeos prontos, organizados por loja
-- **Postar**: escolhe o vídeo, marca os canais (ou "Selecionar todos") e posta em todos de uma vez
-- **Histórico**: mostra o que foi publicado automaticamente e o que ficou pendente de confirmação manual
-- Layout responsivo: menu lateral no computador, menu de abas embaixo no celular
+Antes os dados ficavam salvos só no navegador. Agora o app lê e grava direto no Postgres do seu Supabase
+(as mesmas tabelas do `prisma/schema.sql` que você já rodou). Pra funcionar, faltam 2 variáveis de
+ambiente no Vercel:
 
-## O que ainda é simulado (e por quê)
+1. No painel do Vercel, vá em **Settings > Environment Variables** do projeto e adicione:
+   - `DATABASE_URL` — a connection string do Supabase (Project Settings > Database > Connection string,
+     modo **URI**, com sua senha no lugar de `[YOUR-PASSWORD]`)
+   - `ADMIN_PASSWORD` — uma senha só sua, pra entrar na área `/admin`
+2. Depois de salvar, vá na aba **Deployments**, abra os "..." do último deploy e clique em **Redeploy**
+   (variáveis de ambiente só valem a partir do próximo deploy)
 
-Isso é a fundação da tela e do fluxo. Duas partes ainda não são reais, porque dependem de coisas que só
-você pode fazer (cadastro de app nas plataformas):
+Sem isso o site abre, mas as telas ficam sem carregar dados.
 
-1. **Busca automática do produto pelo link** — hoje é simulada. Pra funcionar de verdade em cada loja
-   (Mercado Livre, Shopee, Amazon, Shein), preciso implementar a leitura de cada uma, do jeito que já
-   fizemos no DigoFertas para o Mercado Livre.
-2. **Login e postagem automática nos canais** — hoje o botão "Conectar" só marca como conectado. Pra
-   postar de verdade, cada rede social exige que você crie um "app" de desenvolvedor nela e me passe as
-   chaves (client ID / client secret). É diferente por rede:
-   - **Automatizável de fato**: YouTube, Facebook, Instagram, X, Mercado Livre (têm API oficial de postagem)
-   - **Manual (sem API pública de postagem)**: TikTok (API existe mas com aprovação restrita), Kwai,
-     WhatsApp — nesses o app vai deixar o vídeo e a legenda prontos, com um botão que abre o app pra você
-     só confirmar
+## Área admin (`/admin`) — teste de credenciais de API
 
-Me diga quando quiser seguir pra essa parte, que eu já sei em qual ordem fazer.
+Criada pra quando formos ligando cada rede social de verdade. Funciona assim:
 
-## Como colocar no ar (tudo pelo celular, sem terminal)
+- Acesse `/admin` — pede a senha que você colocou em `ADMIN_PASSWORD`
+- Pra cada canal, dá pra colar a conta conectada e o token de acesso de teste e salvar
+- Isso só guarda a credencial no banco pra testarmos; não ativa postagem automática sozinho — cada rede
+  social vai precisar da integração de fato (explicado abaixo) antes de postar de verdade
+- Fica fora do menu do app comum — só quem tem a senha acessa
 
-**1. Subir o código pro GitHub**
-- Baixe esse projeto (o zip que te mandei)
-- No app do GitHub (ou pelo site, no navegador do celular): crie um repositório novo e faça upload dos
-  arquivos, ou peça pra eu te ajudar a subir via GitHub Desktop se você tiver um computador por perto
+## Como cada canal vai ficar automático (na ordem que faz sentido)
 
-**2. Criar o banco no Supabase** (só quando formos ligar o banco de dados real)
-- Crie um projeto em supabase.com
-- Vá em **SQL Editor > New query**, cole o conteúdo do arquivo `prisma/schema.sql` e clique em **Run**
-- Isso cria as tabelas de usuário, canal, loja, vídeo e postagem
+| Canal | Situação |
+|---|---|
+| Mercado Livre | API oficial — dá pra automatizar primeiro, já mapeado no VideoSeller |
+| YouTube | API oficial (YouTube Data API) |
+| Facebook / Instagram | API oficial (Meta Graph API), exige conta comercial |
+| X | API oficial, nível pago pra postar vídeo |
+| TikTok | Tem API mas com aprovação restrita — fica em fila de revisão do TikTok |
+| Kwai / WhatsApp | Sem API pública de postagem — sempre vai ser manual (vídeo e legenda prontos, você só confirma) |
 
-**3. Publicar no Vercel**
-- Entre em vercel.com, clique em **Add New > Project**
-- Escolha o repositório que você subiu no GitHub
-- Clique em **Deploy** — o Vercel detecta que é Next.js e configura sozinho
-- Pronto: você recebe um link tipo `afiliado-multipost.vercel.app` que já abre certo no computador e no
-  celular
+Me avise quando quiser começar a implementar a integração de algum desses — cada uma precisa que você
+crie um "app" de desenvolvedor na respectiva plataforma e me passe as chaves (client ID / client secret),
+que aí testamos direto na área admin antes de liberar pros usuários.
 
-## Stack usada
+## Rodando localmente / redeploy
 
-Next.js 14 + React + TypeScript + Tailwind CSS, pronta para deploy no Vercel — mesma base dos seus outros
-projetos.
+Depois de qualquer alteração no código, é só subir pro GitHub — o Vercel refaz o deploy sozinho.
+
+## Stack
+
+Next.js 14 + React + TypeScript + Tailwind CSS + Prisma + Postgres (Supabase), no Vercel.

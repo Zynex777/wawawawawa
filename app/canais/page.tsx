@@ -1,11 +1,14 @@
 "use client";
 
 import { useApp } from "@/components/store";
+import { nomeCanal, iconeCanal } from "@/lib/canais-meta";
 import * as Icons from "lucide-react";
 import { Check } from "lucide-react";
 
 export default function Canais() {
-  const { canais, toggleCanal } = useApp();
+  const { canais, toggleCanal, carregando } = useApp();
+
+  if (carregando) return <p className="text-sm text-muted">Carregando…</p>;
 
   return (
     <div>
@@ -17,7 +20,7 @@ export default function Canais() {
 
       <div className="mt-8 divide-y divide-line border-y border-line">
         {canais.map((canal) => {
-          const Icone = (Icons as any)[canal.icone] ?? Icons.Radio;
+          const Icone = (Icons as any)[iconeCanal(canal.rede)] ?? Icons.Radio;
           return (
             <div key={canal.id} className="flex items-center justify-between py-4">
               <div className="flex items-center gap-3">
@@ -25,7 +28,7 @@ export default function Canais() {
                   <Icone size={18} />
                 </span>
                 <div>
-                  <p className="text-sm font-semibold">{canal.nome}</p>
+                  <p className="text-sm font-semibold">{nomeCanal(canal.rede)}</p>
                   <p className="text-xs text-muted">
                     {canal.suporte === "automatico" ? "Postagem automática via API" : "Postagem manual (sem API pública)"}
                     {canal.conectado && canal.contaConectada ? ` · ${canal.contaConectada}` : ""}
