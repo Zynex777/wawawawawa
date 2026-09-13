@@ -5,6 +5,23 @@ canais de uma vez.
 
 No ar em: https://multipost-afiliado.vercel.app
 
+## Mercado Livre — integração real (primeira rede ligada)
+
+O botão "Conectar" do Mercado Livre na tela de Canais agora abre o login de verdade da sua conta do
+Mercado Livre (OAuth). Pra funcionar, faltam esses passos:
+
+1. No painel do seu app em [developers.mercadolivre.com.br](https://developers.mercadolivre.com.br),
+   em **"URIs de redirect"**, cadastre exatamente:
+   `https://multipost-afiliado.vercel.app/api/auth/mercadolivre/callback`
+2. No Vercel, em **Settings > Environment Variables**, adicione:
+   - `ML_CLIENT_ID` — o "ID do aplicativo" do seu app do Mercado Livre
+   - `ML_CLIENT_SECRET` — a "Chave secreta" do seu app
+3. Redeploy (aba **Deployments** > "..." do último deploy > **Redeploy**)
+
+Depois disso, ao clicar em "Conectar" no Mercado Livre dentro do app, você é levado pra tela de login
+oficial do Mercado Livre; ao autorizar, o app grava o token de acesso e o nome da sua conta automaticamente.
+As outras 7 redes continuam com o botão de conectar simulado até serem integradas na mesma lógica.
+
 ## O que mudou nesta versão: banco de dados real
 
 Antes os dados ficavam salvos só no navegador. Agora o app lê e grava direto no Postgres do seu Supabase
@@ -34,8 +51,8 @@ Criada pra quando formos ligando cada rede social de verdade. Funciona assim:
 
 | Canal | Situação |
 |---|---|
-| Mercado Livre | API oficial — dá pra automatizar primeiro, já mapeado no VideoSeller |
-| YouTube | API oficial (YouTube Data API) |
+| Mercado Livre | **Implementado** — login OAuth real, ver seção acima |
+| YouTube | API oficial (YouTube Data API) — próxima da fila |
 | Facebook / Instagram | API oficial (Meta Graph API), exige conta comercial |
 | X | API oficial, nível pago pra postar vídeo |
 | TikTok | Tem API mas com aprovação restrita — fica em fila de revisão do TikTok |
