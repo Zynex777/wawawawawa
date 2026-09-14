@@ -11,6 +11,7 @@ type AppState = {
   carregando: boolean;
   toggleCanal: (id: string) => Promise<void>;
   adicionarLoja: (nome: string, templateLink: string) => Promise<void>;
+  editarLoja: (id: string, templateLink: string) => Promise<void>;
   adicionarVideo: (v: {
     produtoNome: string;
     lojaId: string;
@@ -20,6 +21,7 @@ type AppState = {
     urlArquivo?: string;
   }) => Promise<Video | null>;
   postarEm: (videoId: string, canalIds: string[]) => Promise<void>;
+  marcarPostagem: (id: string, status: "publicado" | "falhou") => Promise<void>;
 };
 
 const AppContext = createContext<AppState | null>(null);
@@ -107,6 +109,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setPostagens((prev) => [...novas, ...prev]);
   }
 
+  async function editarLoja(id: string, templateLink: string) {
+    const res = await fetch(`/api/lojas/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ templateLink }),
+    });
+    if (!res.ok) return;
+    const atualizada = await res.json();
+    setLojas((prev) => prev.map((l) => (l.id === id ? atualizada : l)));
+  }
+
+  async function marcarPostagem(id: string, status: "publicado" | "falhou") {
+    const res = await fetch(`/api/postagens/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) return;
+    const atualizada = await res.json();
+    setPostagens((prev) => prev.map((p) => (p.id === id ? atualizada : p)));
+  }
+
   return (
     <AppContext.Provider
       value={{
@@ -117,8 +141,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         carregando,
         toggleCanal,
         adicionarLoja,
+        editarLoja,
         adicionarVideo,
         postarEm,
+        marcarPostagem,
       }}
     >
       {children}

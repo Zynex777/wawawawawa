@@ -5,57 +5,78 @@ import { useRouter } from "next/navigation";
 import { useApp } from "@/components/store";
 import { Upload, Link as LinkIcon } from "lucide-react";
 
-function detectarLoja(link: string, lojas: { id: string; nome: string }[]) {
-  const l = link.toLowerCase();
-  const porNome = (trecho: string) => lojas.find((x) => x.nome.toLowerCase().includes(trecho));
-  if (l.includes("mercadolivre") || l.includes("mercadolibre")) return porNome("mercado livre");
-  if (l.includes("shopee")) return porNome("shopee");
-  if (l.includes("amazon")) return porNome("amazon");
-  if (l.includes("shein")) return porNome("shein");
-  return undefined;
-}
+const NOME_LOJA: Record<string, string> = {
+  mercadolivre: "Mercado Livre",
+  shopee: "Shopee",
+  amazon: "Amazon",
+  shein: "Shein",
+};
+
+type Resultado = {
+  loja: string | null;
+  encontrado: boolean;
+  manual: boolean;
+  nome?: string;
+  imagemUrl?: string;
+  precoTexto?: string;
+  videoIdYoutube?: string;
+  aviso?: string;
+};
 
 export default function ImportarProduto() {
   const { lojas, adicionarVideo } = useApp();
   const router = useRouter();
   const [link, setLink] = useState("");
   const [carregando, setCarregando] = useState(false);
-  const [encontrado, setEncontrado] = useState<null | { nome: string; lojaNome: string; temVideo: boolean }>(null);
+  const [resultado, setResultado] = useState<Resultado | null>(null);
+  const [nomeManual, setNomeManual] = useState("");
   const [arquivoGaleria, setArquivoGaleria] = useState<File | null>(null);
-  const [legenda, setLegenda] = useState("");
-
-  function importar() {
-    if (!link.trim()) return;
-    setCarregando(true);
-    setEncontrado(null);
-    // Em produção: chamada à API oficial de cada marketplace para nome/preço/imagem/vídeo.
-    setTimeout(() => {
-      const loja = detectarLoja(link, lojas);
-      const temVideoAutomatico = loja?.nome.toLowerCase().includes("mercado livre") ?? false; // só ML traz vídeo automático via API pública
-      setEncontrado({
-        nome: "Produto importado do link colado",
-        lojaNome: loja?.nome ?? "Loja não reconhecida (cadastre em Lojas)",
-        temVideo: temVideoAutomatico,
-      });
-      setLegenda("Confira essa oferta 🔥 link na bio");
-      setCarregando(false);
-    }, 900);
-  }
-
+  const [legenda, setLegenda] = useState("Confira essa oferta 🔥 link na bio");
   const [salvando, setSalvando] = useState(false);
 
+  async function importar() {
+    if (!link.trim()) return;
+    setCarregando(true);
+    setResultado(null);
+    try {
+      const res = await fetch("/api/produtos/importar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ link }),
+      });
+      const data: Resultado = await res.json();
+      setResultado(data);
+      setNomeManual(data.nome ?? "");
+    } catch {
+      setResultado({ loja: null, encontrado: false, manual: true, aviso: "Falha ao buscar o link." });
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  function encontrarLoja() {
+    if (!resultado?.loja) return undefined;
+    const nomeAlvo = NOME_LOJA[resultado.loja];
+    return lojas.find((l) => l.nome.toLowerCase() === nomeAlvo?.toLowerCase());
+  }
+
   async function finalizar() {
-    if (!encontrado) return;
-    const loja = detectarLoja(link, lojas);
+    if (!resultado) return;
+    const nomeFinal = (resultado.manual ? nomeManual : resultado.nome ?? nomeManual).trim();
+    if (!nomeFinal) {
+      alert("Digite o nome do produto.");
+      return;
+    }
+    const loja = encontrarLoja();
     if (!loja) {
       alert("Não reconheci a loja desse link. Cadastre essa loja em Lojas antes de importar.");
       return;
     }
     setSalvando(true);
     const novo = await adicionarVideo({
-      produtoNome: encontrado.nome,
+      produtoNome: nomeFinal,
       lojaId: loja.id,
-      origem: encontrado.temVideo ? "automatico" : arquivoGaleria ? "galeria" : "automatico",
+      origem: resultado.videoIdYoutube ? "automatico" : arquivoGaleria ? "galeria" : "automatico",
       legenda,
       linkAfiliado: link,
     });
@@ -66,7 +87,10 @@ export default function ImportarProduto() {
   return (
     <div>
       <h1 className="text-2xl font-bold">Importar produto</h1>
-      <p className="mt-1 text-muted">Cole o link de afiliado do produto. O sistema busca nome, preço, imagem e vídeo automaticamente quando possível.</p>
+      <p className="mt-1 text-muted">
+        Cole o link de afiliado do produto. Busco nome, preço e imagem de verdade quando a loja libera;
+        senão, você confirma o nome na mão.
+      </p>
 
       <div className="mt-8 flex gap-2">
         <div className="relative flex-1">
@@ -87,11 +111,33 @@ export default function ImportarProduto() {
         </button>
       </div>
 
-      {encontrado && (
+      {resultado && (
         <div className="mt-8 space-y-5 rounded-md border border-line p-4">
-          <div>
-            <p className="text-sm font-semibold">{encontrado.nome}</p>
-            <p className="text-xs text-muted">{encontrado.lojaNome}</p>
+          {resultado.aviso && (
+            <div className="rounded-md bg-cobalt/10 px-3 py-2 text-xs text-cobalt">{resultado.aviso}</div>
+          )}
+
+          <div className="flex gap-3">
+            {resultado.imagemUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={resultado.imagemUrl} alt="" className="h-16 w-16 shrink-0 rounded-md object-cover" />
+            )}
+            <div className="flex-1">
+              {resultado.manual ? (
+                <input
+                  value={nomeManual}
+                  onChange={(e) => setNomeManual(e.target.value)}
+                  placeholder="Nome do produto"
+                  className="w-full rounded-md border border-line px-3 py-2 text-sm outline-none focus:border-cobalt"
+                />
+              ) : (
+                <p className="text-sm font-semibold">{resultado.nome}</p>
+              )}
+              <p className="mt-1 text-xs text-muted">
+                {resultado.loja ? NOME_LOJA[resultado.loja] : "Loja não reconhecida"}
+                {resultado.precoTexto ? ` · ${resultado.precoTexto}` : ""}
+              </p>
+            </div>
           </div>
 
           <div>
@@ -104,14 +150,14 @@ export default function ImportarProduto() {
             />
           </div>
 
-          {encontrado.temVideo ? (
+          {resultado.videoIdYoutube ? (
             <div className="rounded-md bg-success/10 px-3 py-2 text-xs text-success">
-              Vídeo do produto importado automaticamente. Fica como rascunho pra você revisar.
+              Esse anúncio já tem um vídeo vinculado — importado automaticamente.
             </div>
           ) : (
             <div>
               <label className="text-xs font-semibold text-muted">
-                Essa loja ainda não tem vídeo automático — envie um vídeo da sua galeria
+                Esse produto ainda não tem vídeo automático — envie um vídeo da sua galeria
               </label>
               <label className="mt-1 flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-line py-6 text-sm text-muted hover:border-ink">
                 <Upload size={16} />

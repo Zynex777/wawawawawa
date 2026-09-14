@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getOrCreateUsuario } from "@/lib/usuario";
 import { respostaErro } from "@/lib/api-utils";
+import { aplicarTemplateAfiliado } from "@/lib/afiliado-link";
 
 export const dynamic = "force-dynamic";
 
@@ -30,12 +31,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ erro: "Produto, link e loja são obrigatórios" }, { status: 400 });
     }
 
+    const loja = await prisma.loja.findUnique({ where: { id: lojaId } });
+    const linkComAfiliado = aplicarTemplateAfiliado(linkAfiliado, loja?.templateLink);
+
     const video = await prisma.video.create({
       data: {
         usuarioId: usuario.id,
         lojaId,
         produtoNome,
-        linkAfiliado,
+        linkAfiliado: linkComAfiliado,
         legenda: body.legenda ? String(body.legenda) : null,
         urlArquivo: body.urlArquivo ? String(body.urlArquivo) : null,
         origem: body.origem === "galeria" ? "galeria" : "automatico",
