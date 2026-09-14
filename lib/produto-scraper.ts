@@ -26,54 +26,128 @@ export type ProdutoEncontrado = {
   videoIdYoutube?: string; // quando a própria loja já tem um vídeo vinculado ao anúncio
 };
 
+function formatarPreco(valor: number, moeda?: string) {
+  const simbolo = moeda === "USD" ? "US$" : moeda === "ARS" ? "AR$" : "R$";
+  return `${simbolo} ${valor.toFixed(2)}`;
+}
+
 function extrairIdML(url: string): string | null {
   const match = url.match(/MLB-?(\d{6,})/i);
   return match ? `MLB${match[1]}` : null;
 }
 
+// Tenta primeiro como "item" (anúncio de um vendedor). Se não achar (por exemplo,
+// o link é de uma página de "produto" do catálogo, que reúne vários vendedores),
+// tenta como "product" e pega o menor preço entre os vendedores disponíveis.
 export async function buscarProdutoMercadoLivre(linkFinal: string): Promise<ProdutoEncontrado | null> {
   const id = extrairIdML(linkFinal);
   if (!id) return null;
 
-  const res = await fetch(`https://api.mercadolibre.com/items/${id}`);
-  if (!res.ok) return null;
-  const item = await res.json();
+  const resItem = await fetch(`https://api.mercadolibre.com/items/${id}`);
+  if (resItem.ok) {
+    const item = await resItem.json();
+    let preco = item.price;
 
-  return {
-    nome: item.title,
-    imagemUrl: item.thumbnail || item.pictures?.[0]?.url,
-    precoTexto: item.price ? `R$ ${Number(item.price).toFixed(2)}` : undefined,
-    videoIdYoutube: item.video_id || undefined,
-  };
+    // Item com variações (tamanho, cor etc.) às vezes não tem preço no nível principal.
+    if (!preco && Array.isArray(item.variations) && item.variations.length > 0) {
+      preco = item.variations.find((v: any) => v.price)?.price;
+    }
+
+    return {
+      nome: item.title,
+      imagemUrl: item.thumbnail?.replace(/^http:/, "https:") || item.pictures?.[0]?.url,
+      precoTexto: preco ? formatarPreco(preco, item.currency_id) : undefined,
+      videoIdYoutube: item.video_id || undefined,
+    };
+  }
+
+  const resProduto = await fetch(`https://api.mercadolibre.com/products/${id}`);
+  if (resProduto.ok) {
+    const produto = await resProduto.json();
+    const menorPreco = produto.buy_box_winner?.price;
+    return {
+      nome: produto.name,
+      imagemUrl: produto.pictures?.[0]?.url,
+      precoTexto: menorPreco ? formatarPreco(menorPreco, produto.buy_box_winner?.currency_id) : undefined,
+    };
+  }
+
+  return null;
 }
 
 // Fallback genérico pra lojas sem API de afiliado aberta (Shopee, Amazon, Shein):
-// lê as tags Open Graph da própria página do produto. Nem toda loja libera isso
-// pra requisições de servidor (a Amazon em particular costuma bloquear).
+// primeiro tenta o JSON-LD (dados estruturados que a maioria das lojas embute na
+// página pra aparecer no Google Shopping — costuma trazer preço certo), e só
+// depois cai pras tags Open Graph (que geralmente não têm preço).
+// Nem toda loja libera isso pra requisições de servidor (a Amazon em particular
+// costuma bloquear).
 export async function buscarProdutoPorMetaTags(linkFinal: string): Promise<ProdutoEncontrado | null> {
   try {
     const res = await fetch(linkFinal, {
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+        "Accept-Language": "pt-BR,pt;q=0.9",
       },
     });
     if (!res.ok) return null;
     const html = await res.text();
 
-    const pegar = (prop: string) => {
+    const doJsonLd = extrairProdutoJsonLd(html);
+
+    const pegarMeta = (prop: string) => {
       const m = html.match(new RegExp(`<meta[^>]+property=["']${prop}["'][^>]+content=["']([^"']+)["']`, "i"));
       return m?.[1];
     };
 
-    const nome = pegar("og:title");
+    const nome = doJsonLd?.nome || pegarMeta("og:title");
     if (!nome) return null;
+
+    const precoJsonLd = doJsonLd?.preco;
+    const precoMeta = pegarMeta("product:price:amount") || pegarMeta("og:price:amount");
+    const moedaMeta = pegarMeta("product:price:currency") || pegarMeta("og:price:currency");
 
     return {
       nome,
-      imagemUrl: pegar("og:image"),
+      imagemUrl: doJsonLd?.imagemUrl || pegarMeta("og:image"),
+      precoTexto:
+        precoJsonLd ??
+        (precoMeta ? formatarPreco(parseFloat(precoMeta.replace(",", ".")), moedaMeta) : undefined),
     };
   } catch {
     return null;
   }
+}
+
+// Procura um bloco <script type="application/ld+json"> com schema.org Product e
+// devolve nome, imagem e preço já formatado, se encontrar.
+function extrairProdutoJsonLd(html: string): { nome?: string; imagemUrl?: string; preco?: string } | null {
+  const blocos = html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
+
+  for (const bloco of blocos) {
+    try {
+      const dados = JSON.parse(bloco[1].trim());
+      const candidatos = Array.isArray(dados) ? dados : dados["@graph"] ?? [dados];
+
+      for (const item of candidatos) {
+        const tipo = Array.isArray(item?.["@type"]) ? item["@type"] : [item?.["@type"]];
+        if (!tipo.includes("Product")) continue;
+
+        const oferta = Array.isArray(item.offers) ? item.offers[0] : item.offers;
+        const preco = oferta?.price ?? oferta?.lowPrice;
+        const imagem = Array.isArray(item.image) ? item.image[0] : item.image;
+
+        return {
+          nome: item.name,
+          imagemUrl: imagem,
+          preco: preco ? formatarPreco(parseFloat(preco), oferta?.priceCurrency) : undefined,
+        };
+      }
+    } catch {
+      // bloco de JSON-LD mal formado ou de outro tipo (ex.: BreadcrumbList) — ignora e segue
+      continue;
+    }
+  }
+
+  return null;
 }
