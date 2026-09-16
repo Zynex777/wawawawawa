@@ -5,6 +5,62 @@ canais de uma vez.
 
 No ar em: https://multipost-afiliado.vercel.app
 
+## Armazenamento dos vídeos (Supabase Storage)
+
+Os vídeos escolhidos da galeria agora são enviados de verdade — direto do navegador pro Supabase Storage
+(sem passar pelo Vercel, senão travaria em arquivos grandes). Pra ativar:
+
+1. No painel do Supabase, vá em **Project Settings > API** e copie:
+   - **Project URL** → variável `NEXT_PUBLIC_SUPABASE_URL`
+   - **anon public key** → variável `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - **service_role key** (em "Project API keys", é a secreta) → variável `SUPABASE_SERVICE_ROLE_KEY`
+2. Adicione essas 3 no Vercel e redeploy
+3. O bucket de armazenamento (`videos`) é criado sozinho no primeiro envio — não precisa mexer em nada no
+   Supabase além de pegar essas chaves
+
+A `service_role key` dá acesso total ao seu banco e ao storage — ela só fica no servidor (nunca é exposta
+ao navegador), mas trate ela com o mesmo cuidado de uma senha.
+
+## Antes de tudo: rode esse SQL (uma coluna nova na tabela)
+
+No SQL Editor do Supabase, rode:
+
+```sql
+alter table canal add column if not exists conta_id text;
+```
+
+Isso guarda o ID da Página do Facebook (e, mais pra frente, o ID de canal/conta de outras redes) — sem
+essa coluna a publicação automática não tem como saber em qual Página postar.
+
+## Facebook — login e publicação automática real
+
+Login e publicação de vídeo estão implementados de ponta a ponta agora. Passos pra ativar:
+
+1. No painel do seu app em [developers.facebook.com](https://developers.facebook.com), em **Facebook Login >
+   Configurações**, cadastre em "URIs de redirecionamento do OAuth válidos":
+   `https://multipost-afiliado.vercel.app/api/auth/facebook/callback`
+2. No Vercel, adicione as variáveis `FB_APP_ID` e `FB_APP_SECRET` (as mesmas do seu app do Facebook) e
+   redeploy
+3. Ao conectar (botão "Conectar" na tela Canais), o app pega automaticamente a primeira Página do Facebook
+   que você administra (postar funciona em cima de Página, não do perfil pessoal — assim que a Meta define)
+
+Quando você:
+
+1. Importa um produto **e envia um vídeo da galeria** (isso salva o vídeo no Supabase Storage)
+2. Vai em Postar, escolhe esse vídeo e marca o Facebook (com a Página já conectada)
+3. Clica em "Postar"
+
+O app publica de verdade no feed da sua Página, usando a legenda que você escreveu. O resultado (publicado
+ou falhou, com o motivo) aparece na aba Histórico.
+
+**Uma limitação por enquanto**: só funciona pra vídeos enviados da galeria (que têm arquivo real hospedado).
+Produtos do Mercado Livre que já vêm com vídeo automático (o `video_id` do próprio anúncio, que é um vídeo
+do YouTube) ainda não são baixados/reenviados pro Facebook — por enquanto, esses continuam caindo como
+manual mesmo com o Facebook conectado.
+
+Instagram, YouTube e as demais seguem no mesmo molde: login primeiro (feito no caso do Instagram assim que
+a Página tiver uma conta comercial vinculada), depois a publicação de verdade.
+
 ## Mercado Livre — integração real (primeira rede ligada)
 
 O botão "Conectar" do Mercado Livre na tela de Canais agora abre o login de verdade da sua conta do

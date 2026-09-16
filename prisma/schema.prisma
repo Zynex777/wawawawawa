@@ -28,6 +28,7 @@ model Canal {
   refreshToken   String?    @map("refresh_token")
   expiraEm       DateTime?  @map("expira_em")
   contaConectada String?    @map("conta_conectada")
+  contaId        String?    @map("conta_id")
   conectado      Boolean    @default(false)
   postagens      Postagem[]
 

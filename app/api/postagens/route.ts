@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getOrCreateUsuario } from "@/lib/usuario";
 import { respostaErro } from "@/lib/api-utils";
+import { publicarVideoNaPagina } from "@/lib/facebook";
 
 export const dynamic = "force-dynamic";
 
@@ -19,10 +20,9 @@ export async function GET() {
   }
 }
 
-// Cria uma postagem por canal selecionado. Canais com API oficial já
-// implementada seriam publicados de verdade aqui; por enquanto toda
-// postagem nasce como "manual", com o vídeo e a legenda prontos pra
-// confirmação humana, exceto pelas redes já integradas de verdade.
+// Cria uma postagem por canal selecionado. Pras redes já com integração real
+// (por enquanto, só Facebook) e com o vídeo hospedado, publica de verdade e
+// grava o resultado. As demais continuam nascendo como "manual".
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -33,12 +33,40 @@ export async function POST(req: Request) {
       return NextResponse.json({ erro: "Vídeo e ao menos um canal são obrigatórios" }, { status: 400 });
     }
 
-    const postagens = await prisma.$transaction(
-      canalIds.map((canalId) =>
-        prisma.postagem.create({
-          data: { videoId, canalId, status: "manual" },
-        })
-      )
+    const video = await prisma.video.findUnique({ where: { id: videoId } });
+    if (!video) return NextResponse.json({ erro: "Vídeo não encontrado" }, { status: 404 });
+
+    const canais = await prisma.canal.findMany({ where: { id: { in: canalIds } } });
+
+    const postagens = await Promise.all(
+      canais.map(async (canal: {
+        id: string;
+        rede: string;
+        conectado: boolean;
+        accessToken: string | null;
+        contaId: string | null;
+      }) => {
+        if (
+          canal.rede === "facebook" &&
+          canal.conectado &&
+          canal.accessToken &&
+          canal.contaId &&
+          video.urlArquivo
+        ) {
+          try {
+            await publicarVideoNaPagina(canal.contaId, canal.accessToken, video.urlArquivo, video.legenda ?? undefined);
+            return prisma.postagem.create({
+              data: { videoId, canalId: canal.id, status: "publicado", dataPostada: new Date() },
+            });
+          } catch (e: any) {
+            return prisma.postagem.create({
+              data: { videoId, canalId: canal.id, status: "falhou", erro: e.message ?? "Falha ao publicar" },
+            });
+          }
+        }
+
+        return prisma.postagem.create({ data: { videoId, canalId: canal.id, status: "manual" } });
+      })
     );
 
     return NextResponse.json(postagens, { status: 201 });

@@ -74,6 +74,10 @@ export default function Historico() {
                 </span>
               </button>
 
+              {p.status === "falhou" && p.erro && (
+                <p className="mt-1 text-xs text-coral">{p.erro}</p>
+              )}
+
               {manual && expandido && (
                 <div className="mt-3 space-y-3 rounded-md border border-line bg-white p-3">
                   {video?.legenda && (

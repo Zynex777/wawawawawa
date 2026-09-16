@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/components/store";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 import { Upload, Link as LinkIcon } from "lucide-react";
 
 const NOME_LOJA: Record<string, string> = {
@@ -33,6 +34,29 @@ export default function ImportarProduto() {
   const [arquivoGaleria, setArquivoGaleria] = useState<File | null>(null);
   const [legenda, setLegenda] = useState("Confira essa oferta 🔥 link na bio");
   const [salvando, setSalvando] = useState(false);
+  const [statusUpload, setStatusUpload] = useState("");
+
+  async function enviarVideoGaleria(arquivo: File): Promise<string> {
+    setStatusUpload("Enviando vídeo…");
+    const resAssinatura = await fetch("/api/upload", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nomeArquivo: arquivo.name }),
+    });
+    if (!resAssinatura.ok) {
+      const erro = await resAssinatura.json().catch(() => ({}));
+      throw new Error(erro.erro ?? "Falha ao preparar o envio do vídeo");
+    }
+    const { caminho, token } = await resAssinatura.json();
+
+    const supabase = supabaseBrowser();
+    const { error } = await supabase.storage.from("videos").uploadToSignedUrl(caminho, token, arquivo);
+    if (error) throw new Error(error.message);
+
+    const { data } = supabase.storage.from("videos").getPublicUrl(caminho);
+    setStatusUpload("");
+    return data.publicUrl;
+  }
 
   async function importar() {
     if (!link.trim()) return;
@@ -72,13 +96,27 @@ export default function ImportarProduto() {
       alert("Não reconheci a loja desse link. Cadastre essa loja em Lojas antes de importar.");
       return;
     }
+
     setSalvando(true);
+    let urlArquivo: string | undefined;
+    if (arquivoGaleria) {
+      try {
+        urlArquivo = await enviarVideoGaleria(arquivoGaleria);
+      } catch (e: any) {
+        setSalvando(false);
+        setStatusUpload("");
+        alert(e.message ?? "Falha ao enviar o vídeo. Tente de novo.");
+        return;
+      }
+    }
+
     const novo = await adicionarVideo({
       produtoNome: nomeFinal,
       lojaId: loja.id,
       origem: resultado.videoIdYoutube ? "automatico" : arquivoGaleria ? "galeria" : "automatico",
       legenda,
       linkAfiliado: link,
+      urlArquivo,
     });
     setSalvando(false);
     if (novo) router.push("/videos");
@@ -177,7 +215,7 @@ export default function ImportarProduto() {
             disabled={salvando}
             className="rounded-md bg-cobalt px-4 py-2 text-sm font-semibold text-paper disabled:opacity-50"
           >
-            {salvando ? "Salvando…" : "Salvar no banco de vídeos"}
+            {statusUpload || (salvando ? "Salvando…" : "Salvar no banco de vídeos")}
           </button>
         </div>
       )}

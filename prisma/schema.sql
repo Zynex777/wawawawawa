@@ -16,6 +16,7 @@ create table if not exists canal (
   refresh_token text,
   expira_em timestamptz,
   conta_conectada text,
+  conta_id text,
   conectado boolean default false
 );
 

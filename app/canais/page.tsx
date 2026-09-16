@@ -11,6 +11,7 @@ import { Check } from "lucide-react";
 // usando o botão de conectar simulado até a integração de cada um ser feita.
 const REDES_COM_LOGIN_REAL: Record<string, string> = {
   mercadolivre: "/api/auth/mercadolivre",
+  facebook: "/api/auth/facebook",
 };
 
 function CanaisConteudo() {
