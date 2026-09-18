@@ -66,7 +66,7 @@ function CanaisConteudo() {
                 </a>
               ) : (
                 <button
-                  onClick={() => toggleCanal(canal.id)}
+                  onClick={() => toggleCanal(canal.id).catch((e: Error) => alert(e.message))}
                   className="rounded-md bg-ink px-3 py-1.5 text-xs font-semibold text-paper"
                 >
                   Conectar

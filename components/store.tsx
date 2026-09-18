@@ -19,7 +19,7 @@ type AppState = {
     legenda?: string;
     linkAfiliado: string;
     urlArquivo?: string;
-  }) => Promise<Video | null>;
+  }) => Promise<Video>;
   postarEm: (videoId: string, canalIds: string[]) => Promise<void>;
   marcarPostagem: (id: string, status: "publicado" | "falhou") => Promise<void>;
 };
@@ -63,7 +63,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   async function toggleCanal(id: string) {
     const res = await fetch(`/api/canais/${id}`, { method: "PATCH" });
-    if (!res.ok) return;
+    if (!res.ok) {
+      const erro = await res.json().catch(() => ({}));
+      throw new Error(erro.erro ?? `Erro ${res.status} ao conectar`);
+    }
     const atualizado = await res.json();
     setCanais((prev) => prev.map((c) => (c.id === id ? atualizado : c)));
   }
@@ -74,7 +77,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ nome, templateLink }),
     });
-    if (!res.ok) return;
+    if (!res.ok) {
+      const erro = await res.json().catch(() => ({}));
+      throw new Error(erro.erro ?? `Erro ${res.status} ao adicionar loja`);
+    }
     const nova = await res.json();
     setLojas((prev) => [...prev, nova]);
   }
@@ -92,7 +98,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(v),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const erro = await res.json().catch(() => ({}));
+      throw new Error(erro.erro ?? `Erro ${res.status} ao salvar vídeo`);
+    }
     const novo = await res.json();
     setVideos((prev) => [novo, ...prev]);
     return novo as Video;
@@ -104,7 +113,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ videoId, canalIds }),
     });
-    if (!res.ok) return;
+    if (!res.ok) {
+      const erro = await res.json().catch(() => ({}));
+      throw new Error(erro.erro ?? `Erro ${res.status} ao postar`);
+    }
     const novas = await res.json();
     setPostagens((prev) => [...novas, ...prev]);
   }
@@ -115,7 +127,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ templateLink }),
     });
-    if (!res.ok) return;
+    if (!res.ok) {
+      const erro = await res.json().catch(() => ({}));
+      throw new Error(erro.erro ?? `Erro ${res.status} ao salvar loja`);
+    }
     const atualizada = await res.json();
     setLojas((prev) => prev.map((l) => (l.id === id ? atualizada : l)));
   }
@@ -126,7 +141,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     });
-    if (!res.ok) return;
+    if (!res.ok) {
+      const erro = await res.json().catch(() => ({}));
+      throw new Error(erro.erro ?? `Erro ${res.status} ao atualizar postagem`);
+    }
     const atualizada = await res.json();
     setPostagens((prev) => prev.map((p) => (p.id === id ? atualizada : p)));
   }

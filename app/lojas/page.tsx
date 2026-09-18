@@ -17,10 +17,15 @@ function CampoMolde({
 
   async function salvar() {
     setSalvando(true);
-    await onSalvar(valor.trim());
-    setSalvando(false);
-    setSalvo(true);
-    setTimeout(() => setSalvo(false), 1500);
+    try {
+      await onSalvar(valor.trim());
+      setSalvo(true);
+      setTimeout(() => setSalvo(false), 1500);
+    } catch (e: any) {
+      alert(e.message ?? "Falha ao salvar o molde");
+    } finally {
+      setSalvando(false);
+    }
   }
 
   return (
@@ -65,7 +70,7 @@ export default function Lojas() {
 
   function salvar() {
     if (!nome.trim()) return;
-    adicionarLoja(nome.trim(), template.trim());
+    adicionarLoja(nome.trim(), template.trim()).catch((e: Error) => alert(e.message));
     setNome("");
     setTemplate("");
     setAberto(false);

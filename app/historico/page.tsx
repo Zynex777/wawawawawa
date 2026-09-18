@@ -118,13 +118,13 @@ export default function Historico() {
 
                   <div className="flex gap-2 pt-1">
                     <button
-                      onClick={() => marcarPostagem(p.id, "publicado")}
+                      onClick={() => marcarPostagem(p.id, "publicado").catch((e: Error) => alert(e.message))}
                       className="flex items-center gap-1.5 rounded-md bg-ink px-3 py-1.5 text-xs font-semibold text-paper"
                     >
                       <Check size={14} /> Marcar como postado
                     </button>
                     <button
-                      onClick={() => marcarPostagem(p.id, "falhou")}
+                      onClick={() => marcarPostagem(p.id, "falhou").catch((e: Error) => alert(e.message))}
                       className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold text-coral"
                     >
                       <X size={14} /> Não deu pra postar

@@ -28,10 +28,21 @@ function PostarConteudo() {
     setSelecionados(todosSelecionados ? [] : conectados.map((c) => c.id));
   }
 
-  function postar() {
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState("");
+
+  async function postar() {
     if (!video || selecionados.length === 0) return;
-    postarEm(video.id, selecionados);
-    router.push("/historico");
+    setEnviando(true);
+    setErro("");
+    try {
+      await postarEm(video.id, selecionados);
+      router.push("/historico");
+    } catch (e: any) {
+      setErro(e.message ?? "Falha ao postar");
+    } finally {
+      setEnviando(false);
+    }
   }
 
   if (carregando) return <p className="text-sm text-muted">Carregando…</p>;
@@ -100,12 +111,14 @@ function PostarConteudo() {
         })}
       </div>
 
+      {erro && <p className="mt-4 text-xs text-coral">{erro}</p>}
+
       <button
         onClick={postar}
-        disabled={selecionados.length === 0}
+        disabled={selecionados.length === 0 || enviando}
         className="mt-6 w-full rounded-md bg-coral py-3 text-sm font-semibold text-paper disabled:opacity-40 md:w-auto md:px-6"
       >
-        Postar em {selecionados.length || ""} {selecionados.length === 1 ? "canal" : "canais"}
+        {enviando ? "Postando…" : `Postar em ${selecionados.length || ""} ${selecionados.length === 1 ? "canal" : "canais"}`}
       </button>
     </div>
   );

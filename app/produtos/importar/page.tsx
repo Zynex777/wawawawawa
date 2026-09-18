@@ -110,16 +110,21 @@ export default function ImportarProduto() {
       }
     }
 
-    const novo = await adicionarVideo({
-      produtoNome: nomeFinal,
-      lojaId: loja.id,
-      origem: resultado.videoIdYoutube ? "automatico" : arquivoGaleria ? "galeria" : "automatico",
-      legenda,
-      linkAfiliado: link,
-      urlArquivo,
-    });
-    setSalvando(false);
-    if (novo) router.push("/videos");
+    try {
+      await adicionarVideo({
+        produtoNome: nomeFinal,
+        lojaId: loja.id,
+        origem: resultado.videoIdYoutube ? "automatico" : arquivoGaleria ? "galeria" : "automatico",
+        legenda,
+        linkAfiliado: link,
+        urlArquivo,
+      });
+      router.push("/videos");
+    } catch (e: any) {
+      alert(e.message ?? "Falha ao salvar o vídeo. Tente de novo.");
+    } finally {
+      setSalvando(false);
+    }
   }
 
   return (
