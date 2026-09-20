@@ -24,6 +24,11 @@ const NOMES: Record<string, string> = {
   mercadolivre: "Mercado Livre",
 };
 
+// Redes com login OAuth de verdade implementado. Pra não sobrescrever sem
+// querer o token real dessas contas, o admin não edita mais elas aqui —
+// a única forma de conectar/reconectar é pelo botão "Conectar" da tela Canais.
+const REDES_BLOQUEADAS = ["facebook", "mercadolivre"];
+
 export default function AdminPainel() {
   const router = useRouter();
   const [canais, setCanais] = useState<Canal[]>([]);
@@ -105,6 +110,7 @@ export default function AdminPainel() {
             key={canal.id}
             canal={canal}
             nome={NOMES[canal.rede] ?? canal.rede}
+            bloqueado={REDES_BLOQUEADAS.includes(canal.rede)}
             salvando={salvandoId === canal.id}
             mensagem={mensagem[canal.id]}
             onSalvar={(campos) => salvar(canal, campos)}
@@ -118,12 +124,14 @@ export default function AdminPainel() {
 function CanalCard({
   canal,
   nome,
+  bloqueado,
   salvando,
   mensagem,
   onSalvar,
 }: {
   canal: Canal;
   nome: string;
+  bloqueado: boolean;
   salvando: boolean;
   mensagem?: string;
   onSalvar: (campos: Partial<Canal>) => void;
@@ -131,6 +139,23 @@ function CanalCard({
   const [accessToken, setAccessToken] = useState(canal.accessToken ?? "");
   const [refreshToken, setRefreshToken] = useState(canal.refreshToken ?? "");
   const [conta, setConta] = useState(canal.contaConectada ?? "");
+
+  if (bloqueado) {
+    return (
+      <div className="rounded-md border border-line p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold">{nome}</p>
+          <span className="text-xs text-muted">
+            {canal.conectado ? `conectado · ${canal.contaConectada ?? ""}` : "desconectado"}
+          </span>
+        </div>
+        <p className="mt-2 text-xs text-muted">
+          Essa rede já tem login de verdade — pra não sobrescrever o token real por engano, só dá pra
+          conectar ou reconectar pelo botão "Conectar" na tela Canais do app.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-md border border-line p-4">
