@@ -36,7 +36,35 @@ export default function ImportarProduto() {
   const [salvando, setSalvando] = useState(false);
   const [statusUpload, setStatusUpload] = useState("");
 
-  async function enviarVideoGaleria(arquivo: File): Promise<string> {
+  async function enviarVideoGaleria(arquivoOriginal: File): Promise<string> {
+    let arquivo = arquivoOriginal;
+    const LIMITE_SUPABASE = 50 * 1024 * 1024;
+
+    if (arquivoOriginal.size > 500 * 1024 * 1024) {
+      throw new Error(
+        "Esse vídeo tem mais de 500MB — muito grande pro celular processar no navegador. Corta ou reduz a " +
+          "resolução dele num editor de vídeo do celular antes de enviar (um vídeo de produto de 15-30 " +
+          "segundos costuma ficar bem menor que isso)."
+      );
+    }
+
+    if (arquivoOriginal.size >= 20 * 1024 * 1024) {
+      try {
+        setStatusUpload("Compactando vídeo… 0%");
+        const { comprimirVideo } = await import("@/lib/comprimir-video");
+        arquivo = await comprimirVideo(arquivoOriginal, (pct) => setStatusUpload(`Compactando vídeo… ${pct}%`));
+      } catch {
+        arquivo = arquivoOriginal;
+      }
+
+      if (arquivo.size > LIMITE_SUPABASE) {
+        throw new Error(
+          "Não consegui deixar esse vídeo pequeno o suficiente (limite é 50MB). Tenta um vídeo mais curto " +
+            "ou já reduzido antes de enviar."
+        );
+      }
+    }
+
     setStatusUpload("Enviando vídeo…");
     const resAssinatura = await fetch("/api/upload", {
       method: "POST",
@@ -202,6 +230,9 @@ export default function ImportarProduto() {
               <label className="text-xs font-semibold text-muted">
                 Esse produto ainda não tem vídeo automático — envie um vídeo da sua galeria
               </label>
+              <p className="mt-0.5 text-xs text-muted">
+                Vídeos grandes são compactados automaticamente antes de enviar (pode levar um tempinho).
+              </p>
               <label className="mt-1 flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-line py-6 text-sm text-muted hover:border-ink">
                 <Upload size={16} />
                 {arquivoGaleria ? arquivoGaleria.name : "Escolher vídeo da galeria"}
