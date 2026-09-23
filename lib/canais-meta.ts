@@ -7,6 +7,7 @@ export const CANAIS_META: Record<string, { nome: string; icone: string }> = {
   youtube: { nome: "YouTube", icone: "Youtube" },
   whatsapp: { nome: "WhatsApp", icone: "MessageCircle" },
   mercadolivre: { nome: "Mercado Livre (vídeo)", icone: "ShoppingCart" },
+  telegram: { nome: "Telegram", icone: "Send" },
 };
 
 export function nomeCanal(rede: string) {

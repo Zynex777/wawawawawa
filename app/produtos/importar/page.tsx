@@ -32,7 +32,7 @@ export default function ImportarProduto() {
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [nomeManual, setNomeManual] = useState("");
   const [arquivoGaleria, setArquivoGaleria] = useState<File | null>(null);
-  const [legenda, setLegenda] = useState("Confira essa oferta 🔥 link na bio");
+  const [legenda, setLegenda] = useState("Confira essa oferta 🔥");
   const [salvando, setSalvando] = useState(false);
   const [statusUpload, setStatusUpload] = useState("");
 

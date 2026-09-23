@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useApp } from "@/components/store";
 import { nomeCanal } from "@/lib/canais-meta";
+import { montarLegendaComLink } from "@/lib/legenda";
 import { Copy, Check, X, ChevronDown } from "lucide-react";
 
 const rotulos: Record<string, string> = {
@@ -80,31 +81,20 @@ export default function Historico() {
 
               {manual && expandido && (
                 <div className="mt-3 space-y-3 rounded-md border border-line bg-white p-3">
-                  {video?.legenda && (
+                  {video && (
                     <div>
-                      <p className="text-xs font-semibold text-muted">Legenda</p>
+                      <p className="text-xs font-semibold text-muted">Texto pronto pra colar no post (legenda + link)</p>
                       <div className="mt-1 flex items-start justify-between gap-2">
-                        <p className="text-sm">{video.legenda}</p>
+                        <p className="whitespace-pre-line text-sm">
+                          {montarLegendaComLink(video.legenda, video.linkAfiliado)}
+                        </p>
                         <button
-                          onClick={() => copiar(video.legenda ?? "", p.id + "-legenda")}
+                          onClick={() =>
+                            copiar(montarLegendaComLink(video.legenda, video.linkAfiliado), p.id + "-completo")
+                          }
                           className="shrink-0 text-muted hover:text-ink"
                         >
-                          {copiado === p.id + "-legenda" ? <Check size={15} /> : <Copy size={15} />}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {video?.linkAfiliado && (
-                    <div>
-                      <p className="text-xs font-semibold text-muted">Link de afiliado</p>
-                      <div className="mt-1 flex items-center justify-between gap-2">
-                        <p className="truncate text-sm text-cobalt">{video.linkAfiliado}</p>
-                        <button
-                          onClick={() => copiar(video.linkAfiliado, p.id + "-link")}
-                          className="shrink-0 text-muted hover:text-ink"
-                        >
-                          {copiado === p.id + "-link" ? <Check size={15} /> : <Copy size={15} />}
+                          {copiado === p.id + "-completo" ? <Check size={15} /> : <Copy size={15} />}
                         </button>
                       </div>
                     </div>

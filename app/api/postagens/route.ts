@@ -3,6 +3,9 @@ import { prisma } from "@/lib/db";
 import { getOrCreateUsuario } from "@/lib/usuario";
 import { respostaErro } from "@/lib/api-utils";
 import { publicarVideoNaPagina } from "@/lib/facebook";
+import { publicarVideoTikTok } from "@/lib/tiktok";
+import { publicarVideoTelegram } from "@/lib/telegram";
+import { montarLegendaComLink } from "@/lib/legenda";
 
 export const dynamic = "force-dynamic";
 
@@ -20,8 +23,16 @@ export async function GET() {
   }
 }
 
+type CanalLinha = {
+  id: string;
+  rede: string;
+  conectado: boolean;
+  accessToken: string | null;
+  contaId: string | null;
+};
+
 // Cria uma postagem por canal selecionado. Pras redes já com integração real
-// (por enquanto, só Facebook) e com o vídeo hospedado, publica de verdade e
+// (Facebook, TikTok, Telegram) e com o vídeo hospedado, publica de verdade e
 // grava o resultado. As demais continuam nascendo como "manual".
 export async function POST(req: Request) {
   try {
@@ -37,35 +48,31 @@ export async function POST(req: Request) {
     if (!video) return NextResponse.json({ erro: "Vídeo não encontrado" }, { status: 404 });
 
     const canais = await prisma.canal.findMany({ where: { id: { in: canalIds } } });
+    const legendaComLink = montarLegendaComLink(video.legenda, video.linkAfiliado);
 
     const postagens = await Promise.all(
-      canais.map(async (canal: {
-        id: string;
-        rede: string;
-        conectado: boolean;
-        accessToken: string | null;
-        contaId: string | null;
-      }) => {
-        if (
-          canal.rede === "facebook" &&
-          canal.conectado &&
-          canal.accessToken &&
-          canal.contaId &&
-          video.urlArquivo
-        ) {
-          try {
-            await publicarVideoNaPagina(canal.contaId, canal.accessToken, video.urlArquivo, video.legenda ?? undefined);
-            return prisma.postagem.create({
-              data: { videoId, canalId: canal.id, status: "publicado", dataPostada: new Date() },
-            });
-          } catch (e: any) {
-            return prisma.postagem.create({
-              data: { videoId, canalId: canal.id, status: "falhou", erro: e.message ?? "Falha ao publicar" },
-            });
-          }
-        }
+      canais.map(async (canal: CanalLinha) => {
+        const prontoParaAutomatico = canal.conectado && canal.accessToken && video.urlArquivo;
 
-        return prisma.postagem.create({ data: { videoId, canalId: canal.id, status: "manual" } });
+        try {
+          if (canal.rede === "facebook" && prontoParaAutomatico && canal.contaId) {
+            await publicarVideoNaPagina(canal.contaId, canal.accessToken!, video.urlArquivo!, legendaComLink);
+          } else if (canal.rede === "tiktok" && prontoParaAutomatico) {
+            await publicarVideoTikTok(canal.accessToken!, video.urlArquivo!, legendaComLink);
+          } else if (canal.rede === "telegram" && prontoParaAutomatico && canal.contaId) {
+            await publicarVideoTelegram(canal.accessToken!, canal.contaId, video.urlArquivo!, legendaComLink);
+          } else {
+            return prisma.postagem.create({ data: { videoId, canalId: canal.id, status: "manual" } });
+          }
+
+          return prisma.postagem.create({
+            data: { videoId, canalId: canal.id, status: "publicado", dataPostada: new Date() },
+          });
+        } catch (e: any) {
+          return prisma.postagem.create({
+            data: { videoId, canalId: canal.id, status: "falhou", erro: e.message ?? "Falha ao publicar" },
+          });
+        }
       })
     );
 
