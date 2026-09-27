@@ -1,7 +1,7 @@
 export function urlAutorizacaoTikTok(redirectUri: string, state: string) {
   const params = new URLSearchParams({
     client_key: process.env.TIKTOK_CLIENT_KEY ?? "",
-    scope: "user.info.basic,video.publish",
+    scope: "user.info.basic,video.upload",
     response_type: "code",
     redirect_uri: redirectUri,
     state,
