@@ -8,14 +8,14 @@ import { Copy, Check, X, ChevronDown } from "lucide-react";
 
 const rotulos: Record<string, string> = {
   publicado: "Publicado",
-  pendente: "Pendente",
+  pendente: "Processando no Instagram…",
   falhou: "Falhou",
   manual: "Aguardando confirmação manual",
 };
 
 const cores: Record<string, string> = {
   publicado: "text-success bg-success/10",
-  pendente: "text-muted bg-line/60",
+  pendente: "text-muted bg-line/60",  // termina sozinho ao reabrir o Histórico
   falhou: "text-coral bg-coral/10",
   manual: "text-cobalt bg-cobalt/10",
 };

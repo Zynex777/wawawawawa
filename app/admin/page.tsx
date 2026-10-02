@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { REDES_TRAVADAS_NO_ADMIN } from "@/lib/canais-meta";
 
 type Canal = {
   id: string;
@@ -27,7 +28,7 @@ const NOMES: Record<string, string> = {
 // Redes com login OAuth de verdade implementado. Pra não sobrescrever sem
 // querer o token real dessas contas, o admin não edita mais elas aqui —
 // a única forma de conectar/reconectar é pelo botão "Conectar" da tela Canais.
-const REDES_BLOQUEADAS = ["facebook", "mercadolivre"];
+const REDES_BLOQUEADAS = REDES_TRAVADAS_NO_ADMIN;
 
 export default function AdminPainel() {
   const router = useRouter();

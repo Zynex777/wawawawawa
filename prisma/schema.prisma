@@ -75,6 +75,7 @@ model Postagem {
   dataAgendada DateTime  @default(now()) @map("data_agendada")
   dataPostada  DateTime? @map("data_postada")
   erro         String?
+  externoId    String?   @map("externo_id")
 
   @@map("postagem")
 }

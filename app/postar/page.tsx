@@ -73,6 +73,12 @@ function PostarConteudo() {
             </option>
           ))}
         </select>
+        {video && !video.urlArquivo && (
+          <p className="mt-2 rounded-md bg-coral/10 px-3 py-2 text-xs text-coral">
+            Esse vídeo não tem arquivo enviado da galeria — Facebook, Instagram e Telegram vão cair como
+            manual. Importe o produto de novo anexando o vídeo pra postar automático.
+          </p>
+        )}
       </div>
 
       <div className="mt-6 flex items-center justify-between">

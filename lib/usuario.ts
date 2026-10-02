@@ -2,16 +2,18 @@ import { prisma } from "@/lib/db";
 
 const EMAIL_PADRAO = "rodrigo@afiliado-multipost.local";
 
+// "automatico" = o app publica sozinho (código de publicação implementado).
+// "manual" = o app deixa vídeo + texto prontos e você posta na mão.
 const CANAIS_PADRAO = [
-  { rede: "tiktok", suporte: "automatico" },
-  { rede: "kwai", suporte: "manual" },
   { rede: "facebook", suporte: "automatico" },
   { rede: "instagram", suporte: "automatico" },
-  { rede: "x", suporte: "automatico" },
-  { rede: "youtube", suporte: "automatico" },
-  { rede: "whatsapp", suporte: "manual" },
-  { rede: "mercadolivre", suporte: "automatico" },
   { rede: "telegram", suporte: "automatico" },
+  { rede: "tiktok", suporte: "automatico" },
+  { rede: "x", suporte: "manual" }, // API paga — postagem manual por decisão
+  { rede: "youtube", suporte: "manual" }, // ainda não implementado
+  { rede: "kwai", suporte: "manual" },
+  { rede: "whatsapp", suporte: "manual" },
+  { rede: "mercadolivre", suporte: "manual" }, // ML não tem feed pra vídeo solto
 ];
 
 const LOJAS_PADRAO = [
@@ -34,8 +36,16 @@ export async function getOrCreateUsuario() {
 
   const canaisExistentes = await prisma.canal.findMany({
     where: { usuarioId: usuario.id },
-    select: { rede: true },
+    select: { id: true, rede: true, suporte: true },
   });
+
+  // Corrige o tipo (automático/manual) de canais criados em versões antigas do app
+  for (const padrao of CANAIS_PADRAO) {
+    const existente = canaisExistentes.find((c: { rede: string }) => c.rede === padrao.rede);
+    if (existente && existente.suporte !== padrao.suporte) {
+      await prisma.canal.update({ where: { id: existente.id }, data: { suporte: padrao.suporte } });
+    }
+  }
   const redesExistentes = new Set(canaisExistentes.map((c: { rede: string }) => c.rede));
   const canaisFaltando = CANAIS_PADRAO.filter((c) => !redesExistentes.has(c.rede));
   if (canaisFaltando.length > 0) {

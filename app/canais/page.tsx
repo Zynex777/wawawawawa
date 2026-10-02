@@ -3,17 +3,9 @@
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useApp } from "@/components/store";
-import { nomeCanal, iconeCanal } from "@/lib/canais-meta";
+import { nomeCanal, iconeCanal, REDES_COM_LOGIN_REAL } from "@/lib/canais-meta";
 import * as Icons from "lucide-react";
 import { Check, ChevronDown } from "lucide-react";
-
-// Canais com login OAuth de verdade já implementado. Os demais continuam
-// usando o botão de conectar simulado até a integração de cada um ser feita.
-const REDES_COM_LOGIN_REAL: Record<string, string> = {
-  mercadolivre: "/api/auth/mercadolivre",
-  facebook: "/api/auth/facebook",
-  tiktok: "/api/auth/tiktok",
-};
 
 function TelegramCard({ conectado, contaConectada }: { conectado: boolean; contaConectada?: string | null }) {
   const [aberto, setAberto] = useState(false);
@@ -139,14 +131,21 @@ function CanaisConteudo() {
                 <div>
                   <p className="text-sm font-semibold">{nomeCanal(canal.rede)}</p>
                   <p className="text-xs text-muted">
-                    {canal.suporte === "automatico" ? "Postagem automática via API" : "Postagem manual (sem API pública)"}
+                    {canal.suporte === "automatico" ? "Postagem automática" : "Postagem manual (texto e vídeo prontos pra copiar)"}
                     {canal.conectado && canal.contaConectada ? ` · ${canal.contaConectada}` : ""}
                   </p>
                 </div>
               </div>
               {canal.conectado ? (
-                <span className="flex items-center gap-1.5 rounded-md bg-success/10 px-3 py-1.5 text-xs font-semibold text-success">
-                  <Check size={14} /> Conectado
+                <span className="flex items-center gap-2">
+                  <span className="flex items-center gap-1.5 rounded-md bg-success/10 px-3 py-1.5 text-xs font-semibold text-success">
+                    <Check size={14} /> Conectado
+                  </span>
+                  {linkLoginReal && (
+                    <a href={linkLoginReal} className="text-xs font-semibold text-cobalt">
+                      Reconectar
+                    </a>
+                  )}
                 </span>
               ) : linkLoginReal ? (
                 <a

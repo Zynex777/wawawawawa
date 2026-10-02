@@ -1,117 +1,61 @@
 # Afiliado Multipost
 
-App para cadastrar suas lojas de afiliado, conectar seus canais e postar o vídeo de um produto em todos os
-canais de uma vez.
-
+Cole o link do produto, anexe o vídeo, e poste em vários canais de uma vez.
 No ar em: https://multipost-afiliado.vercel.app
 
-## Checklist de configuração (Vercel)
+## Canais
 
-Cole essas variáveis em **Settings > Environment Variables** e faça **redeploy** depois (Deployments > "..."
-do último > Redeploy — sem isso nada de novo entra em vigor):
-
-| Variável | Onde pegar |
+| Canal | Como posta |
 |---|---|
-| `DATABASE_URL` | Supabase > Project Settings > Database > Connection pooling > modo "Transaction" > copia a URI, troca a senha, adiciona `?pgbouncer=true` no final |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase > Project Settings > API > "Project URL" |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase > Project Settings > API > "anon public" |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase > Project Settings > API > "service_role" (secreta) |
-| `ADMIN_PASSWORD` | Inventada por você, pra entrar em `/admin` |
-| `ML_CLIENT_ID` / `ML_CLIENT_SECRET` | developers.mercadolivre.com.br > seu app > "ID do aplicativo" / "Chave secreta" |
-| `FB_APP_ID` / `FB_APP_SECRET` | developers.facebook.com > seu app > Configurações > Básico |
-| `TIKTOK_CLIENT_KEY` / `TIKTOK_CLIENT_SECRET` | developers.tiktok.com > seu app |
+| Facebook | Automático — vídeo no feed da sua Página |
+| Instagram | Automático — vídeo sai como Reel (conta profissional) |
+| Telegram | Automático — bot posta no seu canal/grupo |
+| TikTok | Automático, mas privado até a TikTok aprovar o app (pausado) |
+| X, YouTube, Kwai, WhatsApp, Mercado Livre | Manual — o Histórico deixa texto + link prontos pra copiar |
 
-Telegram não precisa de variável de ambiente — o token do bot é colado direto na tela Canais do app.
+Postagem automática só acontece com vídeo **enviado da galeria** na tela Importar.
+O link de afiliado vai dentro da legenda. No Facebook e no Telegram ele fica clicável;
+no Instagram aparece como texto (o Instagram não deixa link clicável em legenda).
 
-## SQL necessário no Supabase (uma vez só)
-
-No SQL Editor do Supabase, se ainda não rodou:
+## 1. SQL no Supabase (uma vez)
 
 ```sql
 alter table canal add column if not exists conta_id text;
+alter table postagem add column if not exists externo_id text;
 ```
 
-Guarda o ID da Página/canal/chat de cada rede (Página do Facebook, chat do Telegram etc.) — sem essa
-coluna a publicação automática não sabe pra onde postar.
+## 2. Variáveis no Vercel (Settings > Environment Variables, depois Redeploy)
 
-## Status de cada canal
-
-| Canal | Situação |
+| Variável | Onde pegar |
 |---|---|
-| Mercado Livre | **Automático** — login OAuth real |
-| Facebook | **Automático** — login OAuth real, publica no feed da Página |
-| Telegram | **Automático** — sem OAuth, só token de bot + ID do chat |
-| TikTok | **Automático, mas só privado** — apps sem auditoria da TikTok só postam como "somente eu" (`SELF_ONLY`); pra postar público de verdade, precisa passar pela revisão da TikTok |
-| YouTube | Ainda manual — próximo da fila |
-| Instagram | Ainda manual — precisa de conta comercial vinculada a uma Página do Facebook |
-| X | Ainda manual — precisa de nível pago da API pra postar vídeo |
-| Kwai / WhatsApp | Sempre vão ser manuais — essas redes não têm API pública de postagem |
+| `DATABASE_URL` | Supabase > Project Settings > Database > Connection pooling (Transaction) + `?pgbouncer=true` |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase > Project Settings > API > Project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase > Project Settings > API > anon public |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase > Project Settings > API > service_role |
+| `ADMIN_PASSWORD` | Senha que você inventa pra `/admin` |
+| `FB_APP_ID` / `FB_APP_SECRET` | developers.facebook.com > app > Configurações > Básico |
+| `IG_APP_ID` / `IG_APP_SECRET` | developers.facebook.com > app > Instagram > API com login do Instagram |
+| `ML_CLIENT_ID` / `ML_CLIENT_SECRET` | developers.mercadolivre.com.br (opcional — só importação de produtos) |
+| `TIKTOK_CLIENT_KEY` / `TIKTOK_CLIENT_SECRET` | developers.tiktok.com (opcional — pausado) |
 
-Pras manuais, o Histórico já deixa o texto do post (legenda + link) pronto pra copiar e colar.
+Telegram não usa variável: o token do bot vai direto na tela Canais.
 
-## Link dentro do post (não mais "link na bio")
+## 3. Redirects para cadastrar nos painéis
 
-O link de afiliado agora vai escrito dentro da própria legenda/descrição do post, em toda rede automática
-(Facebook, TikTok, Telegram) e também no texto pronto pra copiar das manuais. Um detalhe: o TikTok não
-transforma texto de descrição em link clicável pra contas comuns — o link aparece como texto, não como
-botão.
+- Facebook: `https://multipost-afiliado.vercel.app/api/auth/facebook/callback`
+- Instagram: `https://multipost-afiliado.vercel.app/api/auth/instagram/callback`
+- Política de privacidade: `https://multipost-afiliado.vercel.app/privacidade`
+- Termos: `https://multipost-afiliado.vercel.app/termos`
 
-## Passo a passo por rede
+## Limites
 
-### Mercado Livre
-1. Em developers.mercadolivre.com.br, no seu app, cadastre em "URIs de redirect":
-   `https://multipost-afiliado.vercel.app/api/auth/mercadolivre/callback`
-2. Adicione `ML_CLIENT_ID` e `ML_CLIENT_SECRET` no Vercel, redeploy
-3. Clica em "Conectar" no Mercado Livre, na tela Canais
-
-### Facebook
-1. Em developers.facebook.com, no seu app, em Login do Facebook > Configurações, cadastre em "URIs de
-   redirecionamento do OAuth válidos": `https://multipost-afiliado.vercel.app/api/auth/facebook/callback`
-2. Ative as permissões `pages_show_list`, `pages_manage_posts` e `pages_read_engagement` (ficam em
-   "Permissões e Recursos" — em apps criados com o produto **Login do Facebook para Empresas**, não o
-   Login comum)
-3. Adicione `FB_APP_ID` e `FB_APP_SECRET` no Vercel, redeploy
-4. Clica em "Conectar" no Facebook — o app pega a primeira Página que você administra
-
-### TikTok
-1. Em developers.tiktok.com, crie um app com os produtos **Login Kit** e **Content Posting API**
-2. Cadastre o redirect URI: `https://multipost-afiliado.vercel.app/api/auth/tiktok/callback`
-3. Adicione os escopos `user.info.basic` e `video.publish`
-4. Adicione `TIKTOK_CLIENT_KEY` e `TIKTOK_CLIENT_SECRET` no Vercel, redeploy
-5. Clica em "Conectar" no TikTok
-6. Lembrete: enquanto seu app não passar pela revisão da TikTok, os vídeos postados só ficam visíveis pra
-   você mesmo (modo "somente eu") — é uma trava da própria TikTok, não do app
-
-### Telegram
-1. Abre uma conversa com **@BotFather** no Telegram, manda `/newbot` e segue as instruções — no final ele
-   te dá um **token**
-2. Cria (ou usa um já existente) canal ou grupo do Telegram, e adiciona esse bot como **administrador**
-   dele
-3. Pra pegar o **ID do chat**: se for um canal público, pode usar o `@nomedocanal` direto; se for privado,
-   encaminha uma mensagem do canal pro bot **@userinfobot** que ele te devolve o ID (algo como
-   `-1001234567890`)
-4. Na tela Canais do app, abre o Telegram, cola o token e o ID do chat, clica em Conectar
-
-## Área admin (`/admin`)
-
-Painel de teste, separado do uso normal — pede a senha de `ADMIN_PASSWORD`. Serve pra colar credenciais de
-teste de canais que ainda não têm login real, sem risco de misturar com conexões de verdade: Facebook,
-Mercado Livre, TikTok e Telegram ficam travados lá (só conectam pelo fluxo real, na tela Canais).
-
-## Vídeo: compactação e limite de tamanho
-
-Vídeos da galeria maiores que 20MB são compactados automaticamente no navegador antes de subir (reduz pra
-720p). O Supabase Storage, no plano gratuito, tem limite de 50MB por arquivo — vídeos maiores que ~500MB
-não são nem processados (aviso pra cortar o vídeo antes).
-
-## Limitações atuais
-
-- A publicação automática só funciona pra vídeos **enviados da galeria** (arquivo real hospedado no
-  Supabase). Produtos do Mercado Livre com vídeo automático (que é um vídeo do YouTube vinculado ao
-  anúncio) ainda caem como manual, mesmo com o canal conectado.
-- TikTok só posta em modo privado até a revisão da TikTok ser aprovada (ver acima).
+- Vídeo até 50MB (vídeos acima de 20MB são compactados no celular antes de subir)
+- Instagram: Reel de 3s a 15min, MP4/H.264; até 50 posts por API a cada 24h.
+  O processamento pode demorar — se passar de ~40s, o post aparece como
+  "Processando no Instagram…" e termina sozinho ao reabrir o Histórico.
+- Telegram: legenda até 1024 caracteres
+- Token do Instagram dura ~60 dias e é renovado sozinho quando o app posta
 
 ## Stack
 
-Next.js 14 + React + TypeScript + Tailwind CSS + Prisma + Postgres (Supabase) + Supabase Storage +
-ffmpeg.wasm, no Vercel.
+Next.js 14 + TypeScript + Tailwind + Prisma + Supabase (Postgres + Storage) + ffmpeg.wasm, no Vercel.

@@ -3,12 +3,13 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import { tokenValido, COOKIE_NAME } from "@/lib/admin-auth";
 import { respostaErro } from "@/lib/api-utils";
+import { REDES_TRAVADAS_NO_ADMIN } from "@/lib/canais-meta";
 
 export const dynamic = "force-dynamic";
 
 // Redes com login OAuth de verdade — o admin não sobrescreve mais essas,
 // pra não trocar por engano o token real por dado de teste.
-const REDES_BLOQUEADAS = ["facebook", "mercadolivre"];
+const REDES_BLOQUEADAS = REDES_TRAVADAS_NO_ADMIN;
 
 async function verificarAdmin() {
   const token = cookies().get(COOKIE_NAME)?.value;

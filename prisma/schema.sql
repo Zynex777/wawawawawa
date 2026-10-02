@@ -48,5 +48,10 @@ create table if not exists postagem (
   status text not null,
   data_agendada timestamptz default now(),
   data_postada timestamptz,
-  erro text
+  erro text,
+  externo_id text
 );
+
+-- Se as tabelas já existiam antes, rode também:
+alter table canal add column if not exists conta_id text;
+alter table postagem add column if not exists externo_id text;
