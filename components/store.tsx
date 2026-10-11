@@ -19,6 +19,7 @@ type AppState = {
     legenda?: string;
     linkAfiliado: string;
     urlArquivo?: string;
+    detalhes?: string;
   }) => Promise<Video>;
   postarEm: (videoId: string, canalIds: string[]) => Promise<void>;
   marcarPostagem: (id: string, status: "publicado" | "falhou") => Promise<void>;
@@ -92,6 +93,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     legenda?: string;
     linkAfiliado: string;
     urlArquivo?: string;
+    detalhes?: string;
   }) {
     const res = await fetch("/api/videos", {
       method: "POST",

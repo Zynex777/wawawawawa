@@ -25,6 +25,7 @@ export type Video = {
   urlArquivo?: string | null;
   legenda?: string | null;
   linkAfiliado: string;
+  detalhes?: string | null;
   status: string;
   criadoEm: string;
 };

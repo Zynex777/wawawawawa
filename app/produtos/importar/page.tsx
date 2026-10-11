@@ -22,6 +22,16 @@ type Resultado = {
   precoTexto?: string;
   videoIdYoutube?: string;
   aviso?: string;
+  detalhes?: {
+    precoOriginalTexto?: string;
+    desconto?: string;
+    vendas?: string;
+    avaliacao?: string;
+    avaliacoes?: string;
+    marca?: string;
+    lojaNome?: string;
+    descricao?: string;
+  };
 };
 
 export default function ImportarProduto() {
@@ -146,6 +156,7 @@ export default function ImportarProduto() {
         legenda,
         linkAfiliado: link,
         urlArquivo,
+        detalhes: resultado.detalhes ? JSON.stringify(resultado.detalhes) : undefined,
       });
       router.push("/videos");
     } catch (e: any) {
@@ -206,10 +217,37 @@ export default function ImportarProduto() {
               )}
               <p className="mt-1 text-xs text-muted">
                 {resultado.loja ? NOME_LOJA[resultado.loja] : "Loja não reconhecida"}
-                {resultado.precoTexto ? ` · ${resultado.precoTexto}` : ""}
+                {resultado.detalhes?.lojaNome ? ` · ${resultado.detalhes.lojaNome}` : ""}
               </p>
+              {resultado.precoTexto && (
+                <p className="mt-1 text-sm">
+                  <span className="font-bold text-coral">{resultado.precoTexto}</span>
+                  {resultado.detalhes?.precoOriginalTexto && (
+                    <span className="ml-2 text-xs text-muted line-through">{resultado.detalhes.precoOriginalTexto}</span>
+                  )}
+                  {resultado.detalhes?.desconto && (
+                    <span className="ml-2 text-xs font-semibold text-success">{resultado.detalhes.desconto}</span>
+                  )}
+                </p>
+              )}
             </div>
           </div>
+
+          {resultado.detalhes && (
+            <div className="space-y-1 rounded-md bg-line/30 p-3 text-xs">
+              {resultado.detalhes.marca && <p><span className="text-muted">Marca:</span> {resultado.detalhes.marca}</p>}
+              {resultado.detalhes.avaliacao && (
+                <p>
+                  <span className="text-muted">Avaliação:</span> {resultado.detalhes.avaliacao}
+                  {resultado.detalhes.avaliacoes ? ` (${resultado.detalhes.avaliacoes})` : ""}
+                </p>
+              )}
+              {resultado.detalhes.vendas && <p><span className="text-muted">Vendas:</span> {resultado.detalhes.vendas}</p>}
+              {resultado.detalhes.descricao && (
+                <p className="pt-1 text-muted">{resultado.detalhes.descricao}</p>
+              )}
+            </div>
+          )}
 
           <div>
             <label className="text-xs font-semibold text-muted">Legenda</label>

@@ -55,3 +55,4 @@ create table if not exists postagem (
 -- Se as tabelas já existiam antes, rode também:
 alter table canal add column if not exists conta_id text;
 alter table postagem add column if not exists externo_id text;
+alter table video add column if not exists detalhes text;

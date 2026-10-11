@@ -40,6 +40,7 @@ export async function POST(req: Request) {
         lojaId,
         produtoNome,
         linkAfiliado: linkComAfiliado,
+        detalhes: body.detalhes ? String(body.detalhes).slice(0, 4000) : null,
         legenda: body.legenda ? String(body.legenda) : null,
         urlArquivo: body.urlArquivo ? String(body.urlArquivo) : null,
         origem: body.origem === "galeria" ? "galeria" : "automatico",

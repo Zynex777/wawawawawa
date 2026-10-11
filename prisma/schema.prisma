@@ -55,6 +55,7 @@ model Video {
   lojaId       String     @map("loja_id") @db.Uuid
   produtoNome  String     @map("produto_nome")
   linkAfiliado String     @map("link_afiliado")
+  detalhes     String?
   legenda      String?
   urlArquivo   String?    @map("url_arquivo")
   origem       String

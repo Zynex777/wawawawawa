@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useApp } from "@/components/store";
 import { nomeCanal } from "@/lib/canais-meta";
 import { montarLegendaComLink } from "@/lib/legenda";
-import { Copy, Check, X, ChevronDown } from "lucide-react";
+import { Copy, Check, X, ChevronDown, ExternalLink } from "lucide-react";
 
 const rotulos: Record<string, string> = {
   publicado: "Publicado",
@@ -58,7 +58,7 @@ export default function Historico() {
           return (
             <div key={p.id} className="py-3">
               <button
-                onClick={() => manual && setAberta(expandido ? null : p.id)}
+                onClick={() => setAberta(expandido ? null : p.id)}
                 className="flex w-full items-center justify-between text-left"
               >
                 <div>
@@ -69,7 +69,7 @@ export default function Historico() {
                   <span className={`rounded-md px-2 py-1 text-xs font-semibold ${cores[p.status]}`}>
                     {rotulos[p.status]}
                   </span>
-                  {manual && (
+                  {(
                     <ChevronDown size={16} className={`text-muted transition-transform ${expandido ? "rotate-180" : ""}`} />
                   )}
                 </span>
@@ -79,8 +79,23 @@ export default function Historico() {
                 <p className="mt-1 text-xs text-coral">{p.erro}</p>
               )}
 
-              {manual && expandido && (
+              {expandido && (
                 <div className="mt-3 space-y-3 rounded-md border border-line bg-white p-3">
+                  {video?.linkAfiliado && (
+                    <a
+                      href={video.linkAfiliado}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between gap-2 rounded-md bg-cobalt px-3 py-2.5 text-sm font-semibold text-paper"
+                    >
+                      <span>Abrir página do produto</span>
+                      <ExternalLink size={16} />
+                    </a>
+                  )}
+                  <p className="text-[11px] text-muted">
+                    No Instagram o link não fica clicável na legenda. Toque acima pra abrir o produto e copie o
+                    link pra colar na bio ou nos stories.
+                  </p>
                   {video && (
                     <div>
                       <p className="text-xs font-semibold text-muted">Texto pronto pra colar no post (legenda + link)</p>
@@ -106,6 +121,7 @@ export default function Historico() {
                     </p>
                   )}
 
+                  {manual && (
                   <div className="flex gap-2 pt-1">
                     <button
                       onClick={() => marcarPostagem(p.id, "publicado").catch((e: Error) => alert(e.message))}
@@ -120,6 +136,7 @@ export default function Historico() {
                       <X size={14} /> Não deu pra postar
                     </button>
                   </div>
+                  )}
                 </div>
               )}
             </div>

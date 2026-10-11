@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useApp } from "@/components/store";
-import { Send, Film } from "lucide-react";
+import { Send, Film, ExternalLink } from "lucide-react";
 
 export default function Videos() {
   const { videos, lojas } = useApp();
@@ -47,12 +47,23 @@ export default function Videos() {
                   </p>
                 </div>
               </div>
+              <div className="flex shrink-0 items-center gap-2">
+              <a
+                href={v.linkAfiliado}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Abrir página do produto"
+                className="flex items-center rounded-md border border-line p-1.5 text-cobalt hover:border-ink"
+              >
+                <ExternalLink size={14} />
+              </a>
               <Link
                 href={`/postar?video=${v.id}`}
                 className="flex shrink-0 items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-xs font-semibold hover:border-ink"
               >
                 <Send size={14} /> Postar
               </Link>
+              </div>
             </div>
           );
         })}

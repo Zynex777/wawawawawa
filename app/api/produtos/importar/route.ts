@@ -6,6 +6,7 @@ import {
   buscarProdutoPorMetaTags,
 } from "@/lib/produto-scraper";
 import { respostaErro } from "@/lib/api-utils";
+import { buscarProdutoShopee } from "@/lib/shopee";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,13 @@ export async function POST(req: Request) {
 
     if (loja === "mercadolivre") {
       const produto = await buscarProdutoMercadoLivre(linkFinal);
+      if (produto) {
+        return NextResponse.json({ loja, encontrado: true, manual: false, ...produto });
+      }
+    }
+
+    if (loja === "shopee") {
+      const produto = await buscarProdutoShopee(linkFinal);
       if (produto) {
         return NextResponse.json({ loja, encontrado: true, manual: false, ...produto });
       }

@@ -22,6 +22,7 @@ no Instagram aparece como texto (o Instagram não deixa link clicável em legend
 ```sql
 alter table canal add column if not exists conta_id text;
 alter table postagem add column if not exists externo_id text;
+alter table video add column if not exists detalhes text;
 ```
 
 ## 2. Variáveis no Vercel (Settings > Environment Variables, depois Redeploy)
@@ -46,6 +47,19 @@ Telegram não usa variável: o token do bot vai direto na tela Canais.
 - Instagram: `https://multipost-afiliado.vercel.app/api/auth/instagram/callback`
 - Política de privacidade: `https://multipost-afiliado.vercel.app/privacidade`
 - Termos: `https://multipost-afiliado.vercel.app/termos`
+
+## Shopee
+
+Cole o link curto (s.shopee.com.br/...) ou o link normal do produto na tela Importar. O app segue o
+redirecionamento, pega o ID da loja e do produto e consulta a API de produtos da Shopee. Puxa nome, imagem,
+preço (com preço original e desconto), vendas, avaliação, marca, nome da loja e descrição.
+
+Se a Shopee bloquear a consulta, o app avisa e você preenche o nome na mão.
+
+## Abrir o produto
+
+Em Vídeos e no Histórico há um botão "Abrir página do produto" que abre o link de afiliado.
+Na legenda, o link aparece no texto (Facebook e Telegram deixam clicável; Instagram não).
 
 ## Limites
 
