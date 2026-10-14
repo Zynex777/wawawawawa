@@ -50,28 +50,49 @@ function formatarVendas(n: number | undefined) {
   return n >= 1000 ? `${(n / 1000).toFixed(1).replace(".", ",")} mil vendidos` : `${n} vendidos`;
 }
 
+// Busca a URL da Shopee. Se SCRAPERAPI_KEY estiver configurada, passa pelo
+// ScraperAPI (IP que a Shopee aceita). Tenta primeiro no modo normal (1 crédito)
+// e, se falhar, no modo premium (10 créditos). Sem a chave, tenta direto.
+async function buscarJsonShopee(url: string): Promise<any | null> {
+  const chave = process.env.SCRAPERAPI_KEY;
+  if (!chave) {
+    const res = await fetch(url, { headers: HEADERS });
+    return res.ok ? res.json() : null;
+  }
+
+  for (const premium of [false, true]) {
+    const params = new URLSearchParams({ api_key: chave, url, country_code: "br" });
+    if (premium) params.set("premium", "true");
+    try {
+      const res = await fetch(`https://api.scraperapi.com/?${params.toString()}`);
+      if (!res.ok) continue;
+      const json = JSON.parse(await res.text());
+      if (json?.data) return json;
+    } catch {
+      // tenta o próximo modo
+    }
+  }
+  return null;
+}
+
 export async function buscarProdutoShopee(linkFinal: string): Promise<ProdutoShopee | null> {
   const ids = extrairIdsShopee(linkFinal);
   if (!ids) return null;
 
   try {
-    const res = await fetch(
-      `https://shopee.com.br/api/v4/item/get?itemid=${ids.itemId}&shopid=${ids.shopId}`,
-      { headers: HEADERS }
+    const json = await buscarJsonShopee(
+      `https://shopee.com.br/api/v4/item/get?itemid=${ids.itemId}&shopid=${ids.shopId}`
     );
-    if (!res.ok) return null;
-    const json = await res.json();
     const item = json?.data;
     if (!item?.name) return null;
 
     // Nome da loja (endpoint separado; se falhar, segue sem ele)
     let lojaNome: string | undefined;
     try {
-      const resLoja = await fetch(
-        `https://shopee.com.br/api/v4/shop/get_shop_detail?shopid=${ids.shopId}`,
-        { headers: HEADERS }
+      const jsonLoja = await buscarJsonShopee(
+        `https://shopee.com.br/api/v4/shop/get_shop_detail?shopid=${ids.shopId}`
       );
-      if (resLoja.ok) lojaNome = (await resLoja.json())?.data?.name;
+      lojaNome = jsonLoja?.data?.name;
     } catch {}
 
     const precoAtual = item.price_min ?? item.price;

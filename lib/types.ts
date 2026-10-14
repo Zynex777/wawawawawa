@@ -23,6 +23,7 @@ export type Video = {
   lojaId: string;
   origem: "automatico" | "galeria";
   urlArquivo?: string | null;
+  urlImagem?: string | null;
   legenda?: string | null;
   linkAfiliado: string;
   detalhes?: string | null;

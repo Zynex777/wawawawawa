@@ -38,3 +38,28 @@ export async function publicarVideoTelegram(
   if (!data.ok) throw new Error(data.description || "Falha ao publicar no Telegram");
   return data.result;
 }
+
+// Envia a foto do produto direto (arquivo, não link).
+export async function publicarFotoTelegram(
+  botToken: string,
+  chatId: string,
+  urlImagem: string,
+  legenda: string
+) {
+  const respImg = await fetch(urlImagem);
+  if (!respImg.ok) throw new Error("Não consegui baixar a foto pra enviar ao Telegram");
+  const bytes = await respImg.arrayBuffer();
+
+  const form = new FormData();
+  form.append("chat_id", chatId);
+  form.append("caption", legenda.slice(0, 1024));
+  form.append("photo", new Blob([bytes], { type: "image/jpeg" }), "produto.jpg");
+
+  const res = await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+    method: "POST",
+    body: form,
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.description || "Falha ao publicar a foto no Telegram");
+  return data.result;
+}

@@ -75,3 +75,24 @@ export async function publicarVideoNaPagina(
   if (!res.ok) throw new Error(data?.error?.message ?? "Falha ao publicar o vídeo no Facebook");
   return data as { id: string };
 }
+
+// Publica uma foto (por URL pública) no feed de uma Página do Facebook.
+export async function publicarFotoNaPagina(
+  idPagina: string,
+  tokenPagina: string,
+  urlImagem: string,
+  legenda?: string
+) {
+  const params = new URLSearchParams({
+    access_token: tokenPagina,
+    url: urlImagem,
+    caption: legenda ?? "",
+  });
+  const res = await fetch(`https://graph.facebook.com/${VERSAO_API}/${idPagina}/photos`, {
+    method: "POST",
+    body: params,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error?.message ?? "Falha ao publicar a foto no Facebook");
+  return data as { id: string; post_id?: string };
+}

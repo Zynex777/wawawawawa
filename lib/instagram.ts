@@ -135,3 +135,39 @@ export async function publicarReel(
   }
   return { resultado: "processando", containerId };
 }
+
+// Foto no feed do Instagram (vira post de imagem, não Reel).
+export async function publicarFoto(
+  igId: string,
+  accessToken: string,
+  urlImagem: string,
+  legenda: string,
+  limiteMs = 40000
+): Promise<{ resultado: "publicado" | "processando"; containerId: string }> {
+  const data = await lerJson(
+    await fetch(`${GRAPH}/${igId}/media`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        image_url: urlImagem,
+        caption: legenda.slice(0, 2200),
+        access_token: accessToken,
+      }),
+    })
+  );
+  const containerId = data.id as string;
+  const inicio = Date.now();
+
+  while (Date.now() - inicio < limiteMs) {
+    await esperar(3000);
+    const { status, detalhe } = await statusContainer(containerId, accessToken);
+    if (status === "FINISHED") {
+      await publicarContainer(igId, accessToken, containerId);
+      return { resultado: "publicado", containerId };
+    }
+    if (status === "ERROR" || status === "EXPIRED") {
+      throw new Error(`O Instagram recusou a imagem (${detalhe ?? status}).`);
+    }
+  }
+  return { resultado: "processando", containerId };
+}

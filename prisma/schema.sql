@@ -56,3 +56,4 @@ create table if not exists postagem (
 alter table canal add column if not exists conta_id text;
 alter table postagem add column if not exists externo_id text;
 alter table video add column if not exists detalhes text;
+alter table video add column if not exists url_imagem text;

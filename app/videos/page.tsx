@@ -35,6 +35,9 @@ export default function Videos() {
               <div className="flex items-center gap-3">
                 {v.urlArquivo ? (
                   <video src={v.urlArquivo} className="h-12 w-12 shrink-0 rounded-md bg-line object-cover" muted />
+                ) : v.urlImagem ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={v.urlImagem} alt="" className="h-12 w-12 shrink-0 rounded-md bg-line object-cover" />
                 ) : (
                   <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-line/60">
                     <Film size={18} className="text-muted" />
@@ -43,7 +46,7 @@ export default function Videos() {
                 <div>
                   <p className="text-sm font-semibold">{v.produtoNome}</p>
                   <p className="text-xs text-muted">
-                    {loja?.nome ?? "Loja"} · {v.origem === "automatico" ? "vídeo automático" : "vídeo da galeria"}
+                    {loja?.nome ?? "Loja"} · {v.urlArquivo ? "vídeo" : v.urlImagem ? "foto" : "sem mídia"}
                   </p>
                 </div>
               </div>

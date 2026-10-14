@@ -19,6 +19,7 @@ type AppState = {
     legenda?: string;
     linkAfiliado: string;
     urlArquivo?: string;
+    urlImagem?: string;
     detalhes?: string;
   }) => Promise<Video>;
   postarEm: (videoId: string, canalIds: string[]) => Promise<void>;
@@ -93,6 +94,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     legenda?: string;
     linkAfiliado: string;
     urlArquivo?: string;
+    urlImagem?: string;
     detalhes?: string;
   }) {
     const res = await fetch("/api/videos", {

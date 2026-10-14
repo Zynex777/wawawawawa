@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getOrCreateUsuario } from "@/lib/usuario";
 import { respostaErro } from "@/lib/api-utils";
-import { publicarVideoNaPagina } from "@/lib/facebook";
+import { publicarVideoNaPagina, publicarFotoNaPagina } from "@/lib/facebook";
 import { publicarVideoTikTok } from "@/lib/tiktok";
-import { publicarVideoTelegram } from "@/lib/telegram";
-import { publicarReel, renovarToken, statusContainer, publicarContainer } from "@/lib/instagram";
+import { publicarVideoTelegram, publicarFotoTelegram } from "@/lib/telegram";
+import { publicarReel, publicarFoto, renovarToken, statusContainer, publicarContainer } from "@/lib/instagram";
 import { montarLegendaComLink } from "@/lib/legenda";
 
 export const dynamic = "force-dynamic";
@@ -120,39 +120,52 @@ export async function POST(req: Request) {
 
     const postagens = await Promise.all(
       canais.map(async (canal: CanalLinha) => {
-        const pronto = canal.conectado && canal.accessToken && video.urlArquivo;
+        const conectado = canal.conectado && canal.accessToken;
+        // Vídeo tem prioridade; sem vídeo, posta a foto do produto
+        const tipo: "video" | "foto" | null = video.urlArquivo ? "video" : video.urlImagem ? "foto" : null;
         const publicado = () =>
           prisma.postagem.create({
             data: { videoId, canalId: canal.id, status: "publicado", dataPostada: new Date() },
           });
 
         try {
-          if (canal.rede === "facebook" && pronto && canal.contaId) {
-            await publicarVideoNaPagina(canal.contaId, canal.accessToken!, video.urlArquivo!, legendaComLink);
+          if (canal.rede === "facebook" && conectado && canal.contaId && tipo) {
+            if (tipo === "video") {
+              await publicarVideoNaPagina(canal.contaId, canal.accessToken!, video.urlArquivo!, legendaComLink);
+            } else {
+              await publicarFotoNaPagina(canal.contaId, canal.accessToken!, video.urlImagem!, legendaComLink);
+            }
             return publicado();
           }
 
-          if (canal.rede === "instagram" && pronto && canal.contaId) {
+          if (canal.rede === "instagram" && conectado && canal.contaId && tipo) {
             const token = await tokenInstagramValido(canal);
-            const r = await publicarReel(canal.contaId, token, video.urlArquivo!, legendaComLink);
+            const r =
+              tipo === "video"
+                ? await publicarReel(canal.contaId, token, video.urlArquivo!, legendaComLink)
+                : await publicarFoto(canal.contaId, token, video.urlImagem!, legendaComLink);
             if (r.resultado === "publicado") return publicado();
-            // Ainda processando: termina sozinho quando o Histórico for aberto
             return prisma.postagem.create({
               data: { videoId, canalId: canal.id, status: "pendente", externoId: r.containerId },
             });
           }
 
-          if (canal.rede === "telegram" && pronto && canal.contaId) {
-            await publicarVideoTelegram(canal.accessToken!, canal.contaId, video.urlArquivo!, legendaComLink);
+          if (canal.rede === "telegram" && conectado && canal.contaId && tipo) {
+            if (tipo === "video") {
+              await publicarVideoTelegram(canal.accessToken!, canal.contaId, video.urlArquivo!, legendaComLink);
+            } else {
+              await publicarFotoTelegram(canal.accessToken!, canal.contaId, video.urlImagem!, legendaComLink);
+            }
             return publicado();
           }
 
-          if (canal.rede === "tiktok" && pronto) {
+          // TikTok publica só vídeo por enquanto
+          if (canal.rede === "tiktok" && conectado && tipo === "video") {
             await publicarVideoTikTok(canal.accessToken!, video.urlArquivo!, legendaComLink);
             return publicado();
           }
 
-          // Rede manual, ou vídeo sem arquivo enviado da galeria
+          // Rede manual, ou sem vídeo nem foto
           return prisma.postagem.create({ data: { videoId, canalId: canal.id, status: "manual" } });
         } catch (e: any) {
           return prisma.postagem.create({

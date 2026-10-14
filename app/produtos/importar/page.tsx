@@ -22,6 +22,8 @@ type Resultado = {
   precoTexto?: string;
   videoIdYoutube?: string;
   aviso?: string;
+  linkLimpo?: string;
+  nomeSugerido?: string;
   detalhes?: {
     precoOriginalTexto?: string;
     desconto?: string;
@@ -42,6 +44,7 @@ export default function ImportarProduto() {
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [nomeManual, setNomeManual] = useState("");
   const [arquivoGaleria, setArquivoGaleria] = useState<File | null>(null);
+  const [fotoGaleria, setFotoGaleria] = useState<File | null>(null);
   const [legenda, setLegenda] = useState("Confira essa oferta 🔥");
   const [salvando, setSalvando] = useState(false);
   const [statusUpload, setStatusUpload] = useState("");
@@ -108,7 +111,7 @@ export default function ImportarProduto() {
       });
       const data: Resultado = await res.json();
       setResultado(data);
-      setNomeManual(data.nome ?? "");
+      setNomeManual(data.nome ?? data.nomeSugerido ?? "");
     } catch {
       setResultado({ loja: null, encontrado: false, manual: true, aviso: "Falha ao buscar o link." });
     } finally {
@@ -120,6 +123,26 @@ export default function ImportarProduto() {
     if (!resultado?.loja) return undefined;
     const nomeAlvo = NOME_LOJA[resultado.loja];
     return lojas.find((l) => l.nome.toLowerCase() === nomeAlvo?.toLowerCase());
+  }
+
+  async function enviarFotoGaleria(arquivo: File): Promise<string> {
+    setStatusUpload("Enviando foto…");
+    const resAssinatura = await fetch("/api/upload", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nomeArquivo: arquivo.name }),
+    });
+    if (!resAssinatura.ok) {
+      const erro = await resAssinatura.json().catch(() => ({}));
+      throw new Error(erro.erro ?? "Falha ao preparar o envio da foto");
+    }
+    const { caminho, token } = await resAssinatura.json();
+    const supabase = supabaseBrowser();
+    const { error } = await supabase.storage.from("videos").uploadToSignedUrl(caminho, token, arquivo);
+    if (error) throw new Error(error.message);
+    const { data } = supabase.storage.from("videos").getPublicUrl(caminho);
+    setStatusUpload("");
+    return data.publicUrl;
   }
 
   async function finalizar() {
@@ -137,6 +160,17 @@ export default function ImportarProduto() {
 
     setSalvando(true);
     let urlArquivo: string | undefined;
+    let urlImagem: string | undefined = resultado.imagemUrl || undefined;
+    if (fotoGaleria) {
+      try {
+        urlImagem = await enviarFotoGaleria(fotoGaleria);
+      } catch (e: any) {
+        setSalvando(false);
+        setStatusUpload("");
+        alert(e.message ?? "Falha ao enviar a foto. Tente de novo.");
+        return;
+      }
+    }
     if (arquivoGaleria) {
       try {
         urlArquivo = await enviarVideoGaleria(arquivoGaleria);
@@ -154,8 +188,9 @@ export default function ImportarProduto() {
         lojaId: loja.id,
         origem: resultado.videoIdYoutube ? "automatico" : arquivoGaleria ? "galeria" : "automatico",
         legenda,
-        linkAfiliado: link,
+        linkAfiliado: resultado.linkLimpo ?? link,
         urlArquivo,
+        urlImagem,
         detalhes: resultado.detalhes ? JSON.stringify(resultado.detalhes) : undefined,
       });
       router.push("/videos");
@@ -180,7 +215,7 @@ export default function ImportarProduto() {
           <input
             value={link}
             onChange={(e) => setLink(e.target.value)}
-            placeholder="Cole o link do produto aqui"
+            placeholder="Cole o link ou o texto de compartilhar da loja"
             className="w-full rounded-md border border-line py-2.5 pl-9 pr-3 text-sm outline-none focus:border-cobalt"
           />
         </div>
@@ -283,6 +318,27 @@ export default function ImportarProduto() {
               </label>
             </div>
           )}
+
+          <div>
+            <label className="text-xs font-semibold text-muted">
+              Foto do produto {resultado.imagemUrl ? "(vou usar a da loja; escolha outra se quiser)" : "(usada quando não tiver vídeo)"}
+            </label>
+            <label className="mt-1 flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-line py-4 text-sm text-muted hover:border-ink">
+              <Upload size={16} />
+              {fotoGaleria ? fotoGaleria.name : "Escolher foto da galeria"}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => setFotoGaleria(e.target.files?.[0] ?? null)}
+              />
+            </label>
+          </div>
+
+          <p className="text-xs text-muted">
+            Sem vídeo, o post sai com a foto. Sem vídeo e sem foto, o Facebook e o Telegram não recebem nada
+            e o item cai como manual.
+          </p>
 
           <button
             onClick={finalizar}

@@ -69,14 +69,18 @@ function PostarConteudo() {
         >
           {videos.map((v) => (
             <option key={v.id} value={v.id}>
-              {v.produtoNome}
+              {v.produtoNome} {v.urlArquivo ? "· vídeo" : v.urlImagem ? "· foto" : "· sem mídia"}
             </option>
           ))}
         </select>
-        {video && !video.urlArquivo && (
+        {video && !video.urlArquivo && video.urlImagem && (
+          <p className="mt-2 rounded-md bg-cobalt/10 px-3 py-2 text-xs text-cobalt">
+            Esse produto vai com a foto (sem vídeo). Facebook, Instagram e Telegram postam a foto.
+          </p>
+        )}
+        {video && !video.urlArquivo && !video.urlImagem && (
           <p className="mt-2 rounded-md bg-coral/10 px-3 py-2 text-xs text-coral">
-            Esse vídeo não tem arquivo enviado da galeria — Facebook, Instagram e Telegram vão cair como
-            manual. Importe o produto de novo anexando o vídeo pra postar automático.
+            Esse produto não tem vídeo nem foto — Facebook, Instagram e Telegram vão cair como manual.
           </p>
         )}
       </div>
