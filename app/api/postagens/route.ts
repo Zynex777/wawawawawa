@@ -7,6 +7,7 @@ import { publicarVideoTikTok } from "@/lib/tiktok";
 import { publicarVideoTelegram, publicarFotoTelegram } from "@/lib/telegram";
 import { publicarReel, publicarFoto, renovarToken, statusContainer, publicarContainer } from "@/lib/instagram";
 import { montarLegendaComLink } from "@/lib/legenda";
+import { publicarPost as publicarThreads, finalizarPostPendente as finalizarThreads, renovarToken as renovarThreads } from "@/lib/threads";
 
 export const dynamic = "force-dynamic";
 // O Instagram leva alguns segundos processando o vídeo antes de publicar
@@ -41,13 +42,31 @@ async function tokenInstagramValido(canal: CanalLinha): Promise<string> {
   return token;
 }
 
+// Token do Threads: mesma ideia, mas renovado pelo endpoint do Threads
+async function tokenThreadsValido(canal: CanalLinha): Promise<string> {
+  const token = canal.accessToken!;
+  if (canal.expiraEm && canal.expiraEm.getTime() - Date.now() < SETE_DIAS) {
+    try {
+      const novo = await renovarThreads(token);
+      await prisma.canal.update({
+        where: { id: canal.id },
+        data: { accessToken: novo.accessToken, expiraEm: new Date(Date.now() + novo.expiresIn * 1000) },
+      });
+      return novo.accessToken;
+    } catch {
+      // segue com o atual; se estiver vencido, o erro aparece no Histórico
+    }
+  }
+  return token;
+}
+
 // Reels que ficaram "processando": verifica de novo e publica se o Instagram terminou
 async function finalizarReelsPendentes(usuarioId: string) {
   const pendentes = await prisma.postagem.findMany({
     where: {
       status: "pendente",
       externoId: { not: null },
-      canal: { rede: "instagram" },
+      canal: { rede: { in: ["instagram", "threads"] } },
       video: { usuarioId },
     },
     include: { canal: true },
@@ -57,6 +76,13 @@ async function finalizarReelsPendentes(usuarioId: string) {
   for (const p of pendentes) {
     try {
       const token = p.canal.accessToken!;
+      if (p.canal.rede === "threads") {
+        const resultado = await finalizarThreads(p.canal.contaId!, token, p.externoId!);
+        if (resultado === "publicado") {
+          await prisma.postagem.update({ where: { id: p.id }, data: { status: "publicado", dataPostada: new Date() } });
+        }
+        continue;
+      }
       const { status, detalhe } = await statusContainer(p.externoId!, token);
       if (status === "FINISHED") {
         await publicarContainer(p.canal.contaId!, token, p.externoId!);
@@ -157,6 +183,25 @@ export async function POST(req: Request) {
               await publicarFotoTelegram(canal.accessToken!, canal.contaId, video.urlImagem!, legendaComLink);
             }
             return publicado();
+          }
+
+          if (canal.rede === "threads" && conectado && canal.contaId) {
+            const token = await tokenThreadsValido(canal);
+            // Threads tem limite de 500 caracteres: corta a legenda antes de mexer no link
+            const espaco = 500 - video.linkAfiliado.length - 2;
+            const legendaCurta = (video.legenda ?? "").slice(0, Math.max(espaco, 0));
+            const texto = montarLegendaComLink(legendaCurta, video.linkAfiliado);
+            const r = await publicarThreads({
+              userId: canal.contaId,
+              token,
+              texto,
+              urlVideo: tipo === "video" ? video.urlArquivo! : undefined,
+              urlImagem: tipo === "foto" ? video.urlImagem! : undefined,
+            });
+            if (r.resultado === "publicado") return publicado();
+            return prisma.postagem.create({
+              data: { videoId, canalId: canal.id, status: "pendente", externoId: r.containerId },
+            });
           }
 
           // TikTok publica só vídeo por enquanto

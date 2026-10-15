@@ -8,6 +8,7 @@ export const CANAIS_META: Record<string, { nome: string; icone: string }> = {
   whatsapp: { nome: "WhatsApp", icone: "MessageCircle" },
   mercadolivre: { nome: "Mercado Livre (vídeo)", icone: "ShoppingCart" },
   telegram: { nome: "Telegram", icone: "Send" },
+  threads: { nome: "Threads", icone: "AtSign" },
 };
 
 export function nomeCanal(rede: string) {
@@ -23,6 +24,7 @@ export const REDES_COM_LOGIN_REAL: Record<string, string> = {
   facebook: "/api/auth/facebook",
   instagram: "/api/auth/instagram",
   tiktok: "/api/auth/tiktok",
+  threads: "/api/auth/threads",
   mercadolivre: "/api/auth/mercadolivre",
 };
 

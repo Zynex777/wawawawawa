@@ -8,6 +8,7 @@ const CANAIS_PADRAO = [
   { rede: "facebook", suporte: "automatico" },
   { rede: "instagram", suporte: "automatico" },
   { rede: "telegram", suporte: "automatico" },
+  { rede: "threads", suporte: "automatico" },
   { rede: "tiktok", suporte: "automatico" },
   { rede: "x", suporte: "manual" }, // API paga — postagem manual por decisão
   { rede: "youtube", suporte: "manual" }, // ainda não implementado
