@@ -57,3 +57,21 @@ alter table canal add column if not exists conta_id text;
 alter table postagem add column if not exists externo_id text;
 alter table video add column if not exists detalhes text;
 alter table video add column if not exists url_imagem text;
+
+-- Agendamento (fase 1)
+create table if not exists programacao (
+  id uuid primary key default gen_random_uuid(),
+  usuario_id uuid not null,
+  modo text not null,
+  periodo text not null,
+  redes text not null,
+  horarios text not null,
+  aprovacao boolean default true,
+  criado_em timestamptz default now()
+);
+alter table postagem add column if not exists programacao_id uuid;
+alter table postagem add column if not exists agendada_para timestamptz;
+alter table postagem add column if not exists tentativas int default 0;
+alter table postagem add column if not exists chave text unique;
+alter table postagem add column if not exists texto_gerado text;
+alter table postagem add column if not exists modelo_texto int;

@@ -52,6 +52,7 @@ export async function getOrCreateUsuario() {
   if (canaisFaltando.length > 0) {
     await prisma.canal.createMany({
       data: canaisFaltando.map((c) => ({ ...c, usuarioId: usuario!.id })),
+      skipDuplicates: true,
     });
   }
 

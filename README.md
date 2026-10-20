@@ -26,6 +26,21 @@ alter table postagem add column if not exists externo_id text;
 alter table video add column if not exists detalhes text;
 ```
 
+Se os canais estiverem aparecendo repetidos, rode também o arquivo `prisma/limpar-canais-repetidos.sql`
+(cola o conteúdo dele no SQL Editor e clica em Run). Ele apaga as cópias e impede que voltem.
+
+## Agenda automática (2 posts por dia por rede)
+
+1. Vercel: adicione a variável `CRON_SECRET` (uma senha longa, sem espaços) e faça Redeploy.
+2. Supabase > Database > Extensions: ative **pg_cron** e **pg_net**.
+3. Supabase > SQL Editor: abra `prisma/agendador-pg-cron.sql`, troque `SEU_CRON_SECRET` pela mesma
+   senha do passo 1 e rode. A partir daí o app é chamado a cada 10 minutos.
+4. No app, vá em **Agenda**: escolha as redes, o período, os horários e o tipo de produto. O app gera tudo
+   e pede sua aprovação antes de publicar.
+
+Cada publicação tenta de novo até 3 vezes em caso de erro. Publicações que passaram do horário sem
+aprovação viram "Expirada", para não saírem todas de uma vez.
+
 ## 2. Variáveis no Vercel (Settings > Environment Variables, depois Redeploy)
 
 | Variável | Onde pegar |

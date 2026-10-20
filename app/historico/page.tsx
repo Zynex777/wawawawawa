@@ -11,6 +11,11 @@ const rotulos: Record<string, string> = {
   pendente: "Processando no Instagram…",
   falhou: "Falhou",
   manual: "Aguardando confirmação manual",
+  aguardando_aprovacao: "Aguardando sua aprovação",
+  agendada: "Agendada",
+  pausada: "Pausada",
+  em_execucao: "Publicando…",
+  expirada: "Expirada (horário passou)",
 };
 
 const cores: Record<string, string> = {
@@ -18,6 +23,11 @@ const cores: Record<string, string> = {
   pendente: "text-muted bg-line/60",  // termina sozinho ao reabrir o Histórico
   falhou: "text-coral bg-coral/10",
   manual: "text-cobalt bg-cobalt/10",
+  aguardando_aprovacao: "text-cobalt bg-cobalt/10",
+  agendada: "text-ink bg-line/60",
+  pausada: "text-muted bg-line/60",
+  em_execucao: "text-cobalt bg-cobalt/10",
+  expirada: "text-muted bg-line/60",
 };
 
 export default function Historico() {

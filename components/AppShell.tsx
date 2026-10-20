@@ -10,6 +10,7 @@ import {
   Film,
   Send,
   History,
+  CalendarDays,
 } from "lucide-react";
 
 const itens = [
@@ -18,6 +19,7 @@ const itens = [
   { href: "/lojas", label: "Lojas", icon: Store },
   { href: "/produtos/importar", label: "Importar", icon: Download },
   { href: "/videos", label: "Vídeos", icon: Film },
+  { href: "/programacoes", label: "Agenda", icon: CalendarDays },
   { href: "/postar", label: "Postar", icon: Send },
   { href: "/historico", label: "Histórico", icon: History },
 ];

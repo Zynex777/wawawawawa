@@ -191,7 +191,7 @@ export default function ImportarProduto() {
         linkAfiliado: resultado.linkLimpo ?? link,
         urlArquivo,
         urlImagem,
-        detalhes: resultado.detalhes ? JSON.stringify(resultado.detalhes) : undefined,
+        detalhes: JSON.stringify({ ...(resultado.detalhes ?? {}), precoTexto: resultado.precoTexto }),
       });
       router.push("/videos");
     } catch (e: any) {

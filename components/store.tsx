@@ -50,7 +50,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         buscar<Video[]>("/api/videos"),
         buscar<Postagem[]>("/api/postagens"),
       ]);
-      setCanais(c);
+      // Remove canais repetidos da mesma rede (mantém o conectado, se houver)
+      const ordenados = [...c].sort((a: Canal, b: Canal) => Number(b.conectado) - Number(a.conectado));
+      const vistos = new Set<string>();
+      setCanais(ordenados.filter((canal: Canal) => (vistos.has(canal.rede) ? false : (vistos.add(canal.rede), true))));
       setLojas(l);
       setVideos(v);
       setPostagens(p);

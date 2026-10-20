@@ -32,6 +32,7 @@ model Canal {
   conectado      Boolean    @default(false)
   postagens      Postagem[]
 
+  @@unique([usuarioId, rede], map: "canal_usuario_rede_key")
   @@map("canal")
 }
 
@@ -78,6 +79,25 @@ model Postagem {
   dataPostada  DateTime? @map("data_postada")
   erro         String?
   externoId    String?   @map("externo_id")
+  programacaoId String?  @map("programacao_id") @db.Uuid
+  agendadaPara DateTime? @map("agendada_para")
+  tentativas   Int       @default(0)
+  chave        String?   @unique
+  textoGerado  String?   @map("texto_gerado")
+  modeloTexto  Int?      @map("modelo_texto")
 
   @@map("postagem")
+}
+
+model Programacao {
+  id           String   @id @default(uuid()) @db.Uuid
+  usuarioId    String   @map("usuario_id") @db.Uuid
+  modo         String
+  periodo      String
+  redes        String
+  horarios     String
+  aprovacao    Boolean  @default(true)
+  criadoEm     DateTime @default(now()) @map("criado_em")
+
+  @@map("programacao")
 }
