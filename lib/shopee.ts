@@ -50,9 +50,9 @@ function formatarVendas(n: number | undefined) {
   return n >= 1000 ? `${(n / 1000).toFixed(1).replace(".", ",")} mil vendidos` : `${n} vendidos`;
 }
 
-// Busca a URL da Shopee. Se SCRAPERAPI_KEY estiver configurada, passa pelo
-// ScraperAPI (IP que a Shopee aceita). Tenta primeiro no modo normal (1 crédito)
-// e, se falhar, no modo premium (10 créditos). Sem a chave, tenta direto.
+// A Shopee bloqueia as consultas comuns. Pelo ScraperAPI, só funciona com
+// ultra_premium=true, que custa 30 créditos por requisição. Por isso faz uma
+// única chamada por produto e não tenta modos mais baratos antes.
 async function buscarJsonShopee(url: string): Promise<any | null> {
   const chave = process.env.SCRAPERAPI_KEY;
   if (!chave) {
@@ -60,19 +60,20 @@ async function buscarJsonShopee(url: string): Promise<any | null> {
     return res.ok ? res.json() : null;
   }
 
-  for (const premium of [false, true]) {
-    const params = new URLSearchParams({ api_key: chave, url, country_code: "br" });
-    if (premium) params.set("premium", "true");
-    try {
-      const res = await fetch(`https://api.scraperapi.com/?${params.toString()}`);
-      if (!res.ok) continue;
-      const json = JSON.parse(await res.text());
-      if (json?.data) return json;
-    } catch {
-      // tenta o próximo modo
-    }
+  const params = new URLSearchParams({
+    api_key: chave,
+    url,
+    country_code: "br",
+    ultra_premium: "true",
+  });
+  try {
+    const res = await fetch(`https://api.scraperapi.com/?${params.toString()}`);
+    if (!res.ok) return null;
+    const json = JSON.parse(await res.text());
+    return json?.data ? json : null;
+  } catch {
+    return null;
   }
-  return null;
 }
 
 export async function buscarProdutoShopee(linkFinal: string): Promise<ProdutoShopee | null> {
@@ -86,14 +87,8 @@ export async function buscarProdutoShopee(linkFinal: string): Promise<ProdutoSho
     const item = json?.data;
     if (!item?.name) return null;
 
-    // Nome da loja (endpoint separado; se falhar, segue sem ele)
-    let lojaNome: string | undefined;
-    try {
-      const jsonLoja = await buscarJsonShopee(
-        `https://shopee.com.br/api/v4/shop/get_shop_detail?shopid=${ids.shopId}`
-      );
-      lojaNome = jsonLoja?.data?.name;
-    } catch {}
+    // Nome da loja não é pedido em outra chamada pra não dobrar o custo (30 créditos cada).
+    const lojaNome: string | undefined = undefined;
 
     const precoAtual = item.price_min ?? item.price;
     const precoAntigo = item.price_before_discount;

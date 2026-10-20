@@ -73,7 +73,7 @@ redirecionamento, pega o ID da loja e do produto e consulta a API de produtos da
 preço (com preço original e desconto), vendas, avaliação, marca, nome da loja e descrição.
 
 A consulta passa pelo ScraperAPI (variável `SCRAPERAPI_KEY`, plano grátis de 1.000 créditos por mês).
-Cada produto usa de 1 a 10 créditos, conforme a Shopee aceite a conexão. Se a chave não estiver
+A Shopee exige o modo Ultra Premium, que gasta 30 créditos por produto importado. Se a chave não estiver
 configurada ou os créditos acabarem, o app avisa e você pode colar o texto de compartilhamento.
 
 ## Abrir o produto
